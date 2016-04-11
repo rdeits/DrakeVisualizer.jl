@@ -3,7 +3,7 @@ module DrakeVisualizer
 using PyLCM
 import PyCall: pyimport
 import GeometryTypes: AbstractGeometry, AbstractMesh, Point, Face, vertices, faces
-import AffineTransforms: AffineTransform, rotationparameters
+import AffineTransforms: AffineTransform, rotationparameters, tformeye
 import Quaternions: qrotation, Quaternion
 import ColorTypes: RGBA, Colorant, red, green, blue, alpha
 import Base: convert
@@ -23,7 +23,7 @@ GeometryData{T, GeometryType <: AbstractGeometry}(geometry::GeometryType,
     transform::AffineTransform{T, 3},
     color::RGBA{Float64}) = GeometryData{T, GeometryType}(geometry, transform, color)
 GeometryData{T, GeometryType <: AbstractGeometry}(geometry::GeometryType,
-    transform::AffineTransform{T, 3},
+    transform::AffineTransform{T, 3}=tformeye(3),
     color=RGBA{Float64}(1., 0, 0, 0.5)) = GeometryData(geometry, transform, convert(RGBA{Float64}, color))
 
 type Link
