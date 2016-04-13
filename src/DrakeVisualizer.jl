@@ -1,8 +1,8 @@
 module DrakeVisualizer
 
 using PyLCM
-import PyCall: pyimport
-import GeometryTypes: AbstractGeometry, AbstractMesh, Point, Face, vertices, faces
+using GeometryTypes
+import PyCall: pyimport, PyObject
 import AffineTransforms: AffineTransform, rotationparameters, tformeye
 import Quaternions: qrotation, Quaternion
 import ColorTypes: RGBA, Colorant, red, green, blue, alpha
@@ -19,7 +19,7 @@ type GeometryData{T, GeometryType <: AbstractGeometry}
     transform::AffineTransform{T, 3}
     color::RGBA{Float64}
 end
-GeometryData{T, GeometryType <: AbstractGeometry}(geometry::GeometryType, 
+GeometryData{T, GeometryType <: AbstractGeometry}(geometry::GeometryType,
     transform::AffineTransform{T, 3},
     color::RGBA{Float64}) = GeometryData{T, GeometryType}(geometry, transform, color)
 GeometryData{T, GeometryType <: AbstractGeometry}(geometry::GeometryType,
@@ -65,25 +65,47 @@ function convert{N, T, FaceType, Offset}(::Type{Array{T, 2}}, faces::Vector{Face
     A
 end
 
+function fill_geometry_data!(msg::PyObject, geometry::AbstractMesh, transform::AffineTransform)
+    msg[:type] = msg[:MESH]
+    msg[:position] = transform.offset
+    msg[:quaternion] = convert(Vector{Float64}, qrotation(rotationparameters(transform.scalefwd)))
+    msg[:string_data] = ""
+    msg[:float_data] = Float64[length(vertices(geometry));
+        length(faces(geometry));
+        convert(Array{Float64,2}, vertices(geometry))[:];
+        convert(Array{Float64,2}, map(f -> convert(Face{3, Int, -1}, f), faces(geometry)))[:];
+    ]
+end
+
+function fill_geometry_data!(msg::PyObject, geometry::HyperRectangle, transform::AffineTransform)
+    msg[:type] = msg[:BOX]
+    msg[:position] = transform.offset + origin(geometry)
+    msg[:quaternion] = convert(Vector{Float64}, qrotation(rotationparameters(transform.scalefwd)))
+    msg[:string_data] = ""
+    msg[:float_data] = widths(geometry)
+end
+
+function fill_geometry_data!(msg::PyObject, geometry::HyperCube, transform::AffineTransform)
+    msg[:type] = msg[:BOX]
+    msg[:position] = transform.offset + origin(geometry)
+    msg[:quaternion] = convert(Vector{Float64}, qrotation(rotationparameters(transform.scalefwd)))
+    msg[:string_data] = ""
+    msg[:float_data] = widths(geometry)
+end
+
+function fill_geometry_data!(msg::PyObject, geometry::HyperSphere, transform::AffineTransform)
+    msg[:type] = msg[:SPHERE]
+    msg[:position] = transform.offset + origin(geometry)
+    msg[:quaternion] = convert(Vector{Float64}, qrotation(rotationparameters(transform.scalefwd)))
+    msg[:string_data] = ""
+    msg[:float_data] = [radius(geometry)]
+end
+
 function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
     msg = lcmdrake[:lcmt_viewer_geometry_data]()
-    msg[:position] = geometry_data.transform.offset
-    msg[:quaternion] = convert(Vector{Float64}, qrotation(rotationparameters(geometry_data.transform.scalefwd)))
     msg[:color] = convert(Vector{Float64}, geometry_data.color)
 
-    if GeomType <: AbstractMesh
-        msg[:type] = msg[:MESH]
-        msg[:string_data] = ""
-        mesh = geometry_data.geometry
-        msg[:float_data] = Float64[length(vertices(mesh));
-            length(faces(mesh));
-            convert(Array{Float64,2}, vertices(mesh))[:];
-            convert(Array{Float64,2}, map(f -> convert(Face{3, Int, -1}, f), faces(mesh)))[:];
-        ]
-    else
-        throw("Not implemented yet")
-    end
-        
+    fill_geometry_data!(msg, geometry_data.geometry, geometry_data.transform)
     msg[:num_float_data] = length(msg[:float_data])
     msg
 end
@@ -110,15 +132,38 @@ end
 
 type Visualizer
     lcm::LCM
+
+    Visualizer(lcm::LCM=LCM()) = new(lcm)
 end
-Visualizer() = Visualizer(LCM())
+
+type VisualizerModel
+    robot::Robot
+    vis::Visualizer
+    robot_id_number::Int
+end
 
 function load(vis::Visualizer, robot::Robot, robot_id_number=1)
     msg = to_lcm(robot, robot_id_number)
     publish(vis.lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
-end 
+    return VisualizerModel(robot, vis, robot_id_number)
+end
 
 load(vis::Visualizer, robot, robot_id_number=1) = load(vis, convert(Robot, robot), robot_id_number)
+
+load(robot) = load(Visualizer(), robot)
+
+function draw(model::VisualizerModel, link_origins::Vector{AffineTransform})
+    msg = lcmdrake[:lcmt_viewer_draw]()
+    msg[:timestamp] = convert(Int64, time_ns())
+    msg[:num_links] = length(link_origins)
+    for (i, origin) in enumerate(link_origins)
+        push!(msg["link_name"], model.robot.links[i].name)
+        push!(msg["robot_num"], model.robot_id_number)
+        push!(msg["position"], origin.offset)
+        push!(msg["quaternion"], convert(Vector{Float64}, qrotation(rotationparameters(origin.scalefwd))))
+    end
+    publish(model.vis.lcm, "DRAKE_VIEWER_DRAW", msg)
+end
 
 function __init__()
     const global lcmdrake = pyimport("drake")
