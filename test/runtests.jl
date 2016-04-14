@@ -3,8 +3,9 @@ using GeometryTypes
 using AffineTransforms
 using Meshing
 using Base.Test
+import Iterators: product
 
-function test_robot_draw()
+function test_robot_load()
     sdf = SignedDistanceField(x -> norm(x)^2 - 1, HyperRectangle(Vec(0.,0,0), Vec(1.,1,1)));
     mesh = HomogenousMesh(sdf, 0.0)
     geom = GeometryData(mesh, tformeye(3))
@@ -12,9 +13,9 @@ function test_robot_draw()
     vis = Visualizer()
     load(vis, robot, 1)
 end
-test_robot_draw()
+test_robot_load()
 
-function test_link_list_draw()
+function test_link_list_load()
     links = Link[]
     levels = [0.5; 1]
     for i = 1:2
@@ -26,13 +27,44 @@ function test_link_list_draw()
     vis = Visualizer()
     load(vis, links, 1)
 end
-test_link_list_draw()
+test_link_list_load()
 
-function test_geom_draw()
+function test_geom_load()
     sdf = SignedDistanceField(x -> norm(x)^2 - 0.5, HyperRectangle(Vec(0.,0,0), Vec(1.,1,1)));
     mesh = HomogenousMesh(sdf, 0.0)
     geom = GeometryData(mesh, tformeye(3))
     vis = Visualizer()
     load(vis, geom, 1)
 end
-test_geom_draw()
+test_geom_load()
+
+
+function test_robot_draw()
+    links = Link[]
+    link_lengths = [1.; 2; 3]
+    for (i, l) in enumerate(link_lengths)
+        geometry = HyperRectangle(Vec(0., -0.1, -0.1), Vec(l, 0.2, 0.2))
+        geometry_data = GeometryData(geometry)
+        push!(links, Link([geometry_data], "link$(i)"))
+    end
+
+
+    function link_origins(joint_angles)
+        transforms = Array{AffineTransform}(length(link_lengths))
+        transforms[1] = tformrotate([0;0;1], joint_angles[1])
+        for i = 2:length(link_lengths)
+            transforms[i] = transforms[i-1] * tformtranslate([link_lengths[i-1]; 0; 0]) * tformrotate([0.;0;1], joint_angles[i])
+        end
+        transforms
+    end
+
+    robot = Robot(links)
+    model = load(robot)
+
+    for x in product([linspace(-pi, pi, 11) for i in 1:length(link_lengths)]...)
+        origins = link_origins(reverse(x))
+        draw(model, origins)
+    end
+end
+
+test_robot_draw()

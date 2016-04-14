@@ -6,13 +6,15 @@ import PyCall: pyimport, PyObject
 import AffineTransforms: AffineTransform, rotationparameters, tformeye
 import Quaternions: qrotation, Quaternion
 import ColorTypes: RGBA, Colorant, red, green, blue, alpha
+import FixedSizeArrays: destructure
 import Base: convert
 
 export GeometryData,
         Link,
         Robot,
         Visualizer,
-        load
+        load,
+        draw
 
 type GeometryData{T, GeometryType <: AbstractGeometry}
     geometry::GeometryType
@@ -41,69 +43,49 @@ convert(::Type{Robot}, link::Link) = Robot([link])
 convert(::Type{Robot}, links::Vector{Link}) = Robot(links)
 convert(::Type{Robot}, geom::GeometryData) = convert(Robot, convert(Link, geom))
 
-convert{T}(::Type{Vector{T}}, q::Quaternion) = T[q.s; q.v1; q.v2; q.v3]
-convert{N, T1, T2}(::Type{Vector{T1}}, color::Colorant{T2, N}) = T1[red(color); green(color); blue(color); alpha(color)]
-convert{T1, T2}(::Type{RGBA{T1}}, v::Vector{T2}) = RGBA{T1}(v[1], v[2], v[3], v[4])
-
-function convert{N, T, PointType}(::Type{Array{T, 2}}, points::Vector{Point{N, PointType}})
-    A = Array{T}(N, length(points))
-    for i = 1:N
-        for j = 1:length(points)
-            A[i,j] = points[j][i]
-        end
-    end
-    A
-end
-
-function convert{N, T, FaceType, Offset}(::Type{Array{T, 2}}, faces::Vector{Face{N, FaceType, Offset}})
-    A = Array{T}(N, length(faces))
-    for i = 1:N
-        for j = 1:length(faces)
-            A[i,j] = faces[j][i]
-        end
-    end
-    A
-end
+to_lcm(q::Quaternion) = Float64[q.s; q.v1; q.v2; q.v3]
+to_lcm(color::Colorant) = Float64[red(color); green(color); blue(color); alpha(color)]
 
 function fill_geometry_data!(msg::PyObject, geometry::AbstractMesh, transform::AffineTransform)
     msg[:type] = msg[:MESH]
     msg[:position] = transform.offset
-    msg[:quaternion] = convert(Vector{Float64}, qrotation(rotationparameters(transform.scalefwd)))
+    msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
     msg[:float_data] = Float64[length(vertices(geometry));
         length(faces(geometry));
-        convert(Array{Float64,2}, vertices(geometry))[:];
-        convert(Array{Float64,2}, map(f -> convert(Face{3, Int, -1}, f), faces(geometry)))[:];
-    ]
+        vec(destructure(vertices(geometry)));
+        vec(destructure(map(f -> convert(Face{3, Int, -1}, f), faces(geometry))))]
 end
+
+center(geometry::HyperRectangle) = 0.5 * (minimum(geometry) + maximum(geometry))
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperRectangle, transform::AffineTransform)
     msg[:type] = msg[:BOX]
-    msg[:position] = transform.offset + origin(geometry)
-    msg[:quaternion] = convert(Vector{Float64}, qrotation(rotationparameters(transform.scalefwd)))
+    msg[:position] = transform.offset + convert(Vector, center(geometry))
+    msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
-    msg[:float_data] = widths(geometry)
+    msg[:float_data] = convert(Vector, widths(geometry))
 end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperCube, transform::AffineTransform)
     msg[:type] = msg[:BOX]
-    msg[:position] = transform.offset + origin(geometry)
-    msg[:quaternion] = convert(Vector{Float64}, qrotation(rotationparameters(transform.scalefwd)))
+    msg[:position] = transform.offset + convert(Vector, origin(geometry))
+    msg[:quaternion] = to_lcm_data(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
-    msg[:float_data] = widths(geometry)
+    msg[:float_data] = convert(Vector, widths(geometry))
 end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperSphere, transform::AffineTransform)
     msg[:type] = msg[:SPHERE]
-    msg[:position] = transform.offset + origin(geometry)
-    msg[:quaternion] = convert(Vector{Float64}, qrotation(rotationparameters(transform.scalefwd)))
+    msg[:position] = transform.offset + convert(Vector, origin(geometry))
+    msg[:quaternion] = to_lcm_data(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
     msg[:float_data] = [radius(geometry)]
 end
 
 function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
     msg = lcmdrake[:lcmt_viewer_geometry_data]()
-    msg[:color] = convert(Vector{Float64}, geometry_data.color)
+    msg[:color] = to_lcm(geometry_data.color)
 
     fill_geometry_data!(msg, geometry_data.geometry, geometry_data.transform)
     msg[:num_float_data] = length(msg[:float_data])
@@ -160,7 +142,7 @@ function draw(model::VisualizerModel, link_origins::Vector{AffineTransform})
         push!(msg["link_name"], model.robot.links[i].name)
         push!(msg["robot_num"], model.robot_id_number)
         push!(msg["position"], origin.offset)
-        push!(msg["quaternion"], convert(Vector{Float64}, qrotation(rotationparameters(origin.scalefwd))))
+        push!(msg["quaternion"], to_lcm(qrotation(rotationparameters(origin.scalefwd))))
     end
     publish(model.vis.lcm, "DRAKE_VIEWER_DRAW", msg)
 end
