@@ -42,6 +42,7 @@ convert(::Type{Link}, geom::GeometryData) = Link([geom])
 convert(::Type{Robot}, link::Link) = Robot([link])
 convert(::Type{Robot}, links::Vector{Link}) = Robot(links)
 convert(::Type{Robot}, geom::GeometryData) = convert(Robot, convert(Link, geom))
+convert(::Type{Robot}, geometry::AbstractGeometry) = convert(Robot, GeometryData(geometry))
 
 to_lcm(q::Quaternion) = Float64[q.s; q.v1; q.v2; q.v3]
 to_lcm(color::Colorant) = Float64[red(color); green(color); blue(color); alpha(color)]
@@ -136,7 +137,7 @@ load(vis::Visualizer, robot, robot_id_number=1) = load(vis, convert(Robot, robot
 
 load(robot) = load(Visualizer(), robot)
 
-function draw(model::VisualizerModel, link_origins::Vector{AffineTransform})
+function draw{N, T}(model::VisualizerModel, link_origins::Vector{AffineTransform{T, N}})
     msg = lcmdrake[:lcmt_viewer_draw]()
     msg[:timestamp] = convert(Int64, time_ns())
     msg[:num_links] = length(link_origins)
