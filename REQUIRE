@@ -5,3 +5,4 @@ GeometryTypes
 AffineTransforms
 Quaternions
 ColorTypes
+FixedSizeArrays
