@@ -46,6 +46,10 @@ convert(::Type{Robot}, geom::GeometryData) = convert(Robot, convert(Link, geom))
 to_lcm(q::Quaternion) = Float64[q.s; q.v1; q.v2; q.v3]
 to_lcm(color::Colorant) = Float64[red(color); green(color); blue(color); alpha(color)]
 
+center(geometry::HyperRectangle) = minimum(geometry) + 0.5 * widths(geometry)
+center(geometry::HyperCube) = minimum(geometry) + 0.5 * widths(geometry)
+center(geometry::HyperSphere) = origin(geometry)
+
 function fill_geometry_data!(msg::PyObject, geometry::AbstractMesh, transform::AffineTransform)
     msg[:type] = msg[:MESH]
     msg[:position] = transform.offset
@@ -57,8 +61,6 @@ function fill_geometry_data!(msg::PyObject, geometry::AbstractMesh, transform::A
         vec(destructure(map(f -> convert(Face{3, Int, -1}, f), faces(geometry))))]
 end
 
-center(geometry::HyperRectangle) = 0.5 * (minimum(geometry) + maximum(geometry))
-
 function fill_geometry_data!(msg::PyObject, geometry::HyperRectangle, transform::AffineTransform)
     msg[:type] = msg[:BOX]
     msg[:position] = transform.offset + convert(Vector, center(geometry))
@@ -69,7 +71,7 @@ end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperCube, transform::AffineTransform)
     msg[:type] = msg[:BOX]
-    msg[:position] = transform.offset + convert(Vector, origin(geometry))
+    msg[:position] = transform.offset + convert(Vector, center(geometry))
     msg[:quaternion] = to_lcm_data(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
     msg[:float_data] = convert(Vector, widths(geometry))
@@ -77,7 +79,7 @@ end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperSphere, transform::AffineTransform)
     msg[:type] = msg[:SPHERE]
-    msg[:position] = transform.offset + convert(Vector, origin(geometry))
+    msg[:position] = transform.offset + convert(Vector, center(geometry))
     msg[:quaternion] = to_lcm_data(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
     msg[:float_data] = [radius(geometry)]
