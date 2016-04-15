@@ -137,7 +137,7 @@ load(vis::Visualizer, robot, robot_id_number=1) = load(vis, convert(Robot, robot
 
 load(robot) = load(Visualizer(), robot)
 
-function draw{N, T}(model::VisualizerModel, link_origins::Vector{AffineTransform{T, N}})
+function draw{T <: AffineTransform}(model::VisualizerModel, link_origins::Vector{T})
     msg = lcmdrake[:lcmt_viewer_draw]()
     msg[:timestamp] = convert(Int64, time_ns())
     msg[:num_links] = length(link_origins)
