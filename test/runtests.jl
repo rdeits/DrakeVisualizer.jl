@@ -68,3 +68,5 @@ function test_robot_draw()
 end
 
 test_robot_draw()
+
+run(`jupyter nbconvert --to notebook --execute ../demo.ipynb --output ../demo.ipynb`)
