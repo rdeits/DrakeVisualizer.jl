@@ -66,7 +66,7 @@ end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperRectangle, transform::AffineTransform)
     msg[:type] = msg[:BOX]
-    msg[:position] = transform.offset + convert(Vector, center(geometry))
+    msg[:position] = transform.offset + transform.scalefwd * convert(Vector, center(geometry))
     msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
     msg[:float_data] = convert(Vector, widths(geometry))
@@ -74,7 +74,7 @@ end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperCube, transform::AffineTransform)
     msg[:type] = msg[:BOX]
-    msg[:position] = transform.offset + convert(Vector, center(geometry))
+    msg[:position] = transform.offset + transform.scalefwd * convert(Vector, center(geometry))
     msg[:quaternion] = to_lcm_data(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
     msg[:float_data] = convert(Vector, widths(geometry))
@@ -82,7 +82,7 @@ end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperSphere, transform::AffineTransform)
     msg[:type] = msg[:SPHERE]
-    msg[:position] = transform.offset + convert(Vector, center(geometry))
+    msg[:position] = transform.offset + transform.scalefwd * convert(Vector, center(geometry))
     msg[:quaternion] = to_lcm_data(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
     msg[:float_data] = [radius(geometry)]
