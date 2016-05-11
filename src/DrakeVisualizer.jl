@@ -15,7 +15,6 @@ export GeometryData,
         Link,
         Robot,
         Visualizer,
-        load,
         draw
 
 type GeometryData{T, GeometryType <: AbstractGeometry}
@@ -118,28 +117,21 @@ function to_lcm(robot::Robot, robot_id_number::Real)
 end
 
 type Visualizer
+    robot::Robot
+    robot_id_number::Int
     lcm::LCM
 
-    Visualizer(lcm::LCM=LCM()) = new(lcm)
+    function Visualizer(robot::Robot, robot_id_number=1, lcm::LCM=LCM())
+        msg = to_lcm(robot, robot_id_number)
+        publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
+        return new(robot, robot_id_number, lcm)
+    end
+
 end
 
-type VisualizerModel
-    robot::Robot
-    vis::Visualizer
-    robot_id_number::Int
-end
+Visualizer(data, robot_id_number=1, lcm::LCM=LCM()) = Visualizer(convert(Robot, data), robot_id_number, lcm)
 
-function load(vis::Visualizer, robot::Robot, robot_id_number=1)
-    msg = to_lcm(robot, robot_id_number)
-    publish(vis.lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
-    return VisualizerModel(robot, vis, robot_id_number)
-end
-
-load(vis::Visualizer, robot, robot_id_number=1) = load(vis, convert(Robot, robot), robot_id_number)
-
-load(robot) = load(Visualizer(), robot)
-
-function draw{T <: AffineTransform}(model::VisualizerModel, link_origins::Vector{T})
+function draw{T <: AffineTransform}(model::Visualizer, link_origins::Vector{T})
     msg = lcmdrake[:lcmt_viewer_draw]()
     msg[:timestamp] = convert(Int64, time_ns())
     msg[:num_links] = length(link_origins)
@@ -149,7 +141,7 @@ function draw{T <: AffineTransform}(model::VisualizerModel, link_origins::Vector
         push!(msg["position"], origin.offset)
         push!(msg["quaternion"], to_lcm(qrotation(rotationparameters(origin.scalefwd))))
     end
-    publish(model.vis.lcm, "DRAKE_VIEWER_DRAW", msg)
+    publish(model.lcm, "DRAKE_VIEWER_DRAW", msg)
 end
 
 function __init__()

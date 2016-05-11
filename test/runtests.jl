@@ -10,8 +10,7 @@ function test_robot_load()
     mesh = HomogenousMesh(sdf, 0.0)
     geom = GeometryData(mesh, tformeye(3))
     robot = convert(Robot, geom)
-    vis = Visualizer()
-    load(vis, robot, 1)
+    vis = Visualizer(robot, 1)
 end
 test_robot_load()
 
@@ -24,8 +23,7 @@ function test_link_list_load()
         geom = GeometryData(mesh, tformeye(3))
         push!(links, Link(geom))
     end
-    vis = Visualizer()
-    load(vis, links, 1)
+    vis = Visualizer(links, 1)
 end
 test_link_list_load()
 
@@ -33,8 +31,7 @@ function test_geom_load()
     sdf = SignedDistanceField(x -> norm(x)^2 - 0.5, HyperRectangle(Vec(0.,0,0), Vec(1.,1,1)));
     mesh = HomogenousMesh(sdf, 0.0)
     geom = GeometryData(mesh, tformeye(3))
-    vis = Visualizer()
-    load(vis, geom, 1)
+    vis = Visualizer(geom)
 end
 test_geom_load()
 
@@ -59,7 +56,7 @@ function test_robot_draw()
     end
 
     robot = Robot(links)
-    model = load(robot)
+    model = Visualizer(robot)
 
     for x in product([linspace(-pi, pi, 11) for i in 1:length(link_lengths)]...)
         origins = link_origins(reverse(x))
