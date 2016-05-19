@@ -4,7 +4,7 @@ module DrakeVisualizer
 
 using PyLCM
 using GeometryTypes
-import PyCall: pyimport, PyObject
+import PyCall: pyimport, PyObject, pywrap
 import AffineTransforms: AffineTransform, rotationparameters, tformeye
 import Quaternions: qrotation, Quaternion
 import ColorTypes: RGBA, Colorant, red, green, blue, alpha
@@ -41,7 +41,7 @@ end
 
 convert(::Type{Link}, geom::GeometryData) = Link([geom])
 convert(::Type{Robot}, link::Link) = Robot([link])
-convert(::Type{Robot}, links::Vector{Link}) = Robot(links)
+convert(::Type{Robot}, links::AbstractArray{Link}) = Robot(convert(Vector{Link}, links))
 convert(::Type{Robot}, geom::GeometryData) = convert(Robot, convert(Link, geom))
 convert(::Type{Robot}, geometry::AbstractGeometry) = convert(Robot, GeometryData(geometry))
 
@@ -57,10 +57,12 @@ function fill_geometry_data!(msg::PyObject, geometry::AbstractMesh, transform::A
     msg[:position] = transform.offset
     msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
-    msg[:float_data] = Float64[length(vertices(geometry));
+    float_data = Float64[length(vertices(geometry));
         length(faces(geometry));
         vec(destructure(vertices(geometry)));
         vec(destructure(map(f -> convert(Face{3, Int, -1}, f), faces(geometry))))]
+    msg[:float_data] = float_data
+    msg[:num_float_data] = length(float_data)
 end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperRectangle, transform::AffineTransform)
@@ -68,36 +70,41 @@ function fill_geometry_data!(msg::PyObject, geometry::HyperRectangle, transform:
     msg[:position] = transform.offset + transform.scalefwd * convert(Vector, center(geometry))
     msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
-    msg[:float_data] = convert(Vector, widths(geometry))
+    float_data = convert(Vector, widths(geometry))
+    msg[:float_data] = float_data
+    msg[:num_float_data] = length(float_data)
+
 end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperCube, transform::AffineTransform)
     msg[:type] = msg[:BOX]
     msg[:position] = transform.offset + transform.scalefwd * convert(Vector, center(geometry))
-    msg[:quaternion] = to_lcm_data(qrotation(rotationparameters(transform.scalefwd)))
+    msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
-    msg[:float_data] = convert(Vector, widths(geometry))
+    float_data = convert(Vector, widths(geometry))
+    msg[:float_data] = float_data
+    msg[:num_float_data] = length(float_data)
 end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperSphere, transform::AffineTransform)
     msg[:type] = msg[:SPHERE]
     msg[:position] = transform.offset + transform.scalefwd * convert(Vector, center(geometry))
-    msg[:quaternion] = to_lcm_data(qrotation(rotationparameters(transform.scalefwd)))
+    msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
     msg[:string_data] = ""
     msg[:float_data] = [radius(geometry)]
+    msg[:num_float_data] = 1
 end
 
 function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
-    msg = lcmdrake[:lcmt_viewer_geometry_data]()
+    msg = lcmdrake.lcmt_viewer_geometry_data()
     msg[:color] = to_lcm(geometry_data.color)
 
     fill_geometry_data!(msg, geometry_data.geometry, geometry_data.transform)
-    msg[:num_float_data] = length(msg[:float_data])
     msg
 end
 
 function to_lcm(link::Link, robot_id_number::Real)
-    msg = lcmdrake[:lcmt_viewer_link_data]()
+    msg = lcmdrake.lcmt_viewer_link_data()
     msg[:name] = link.name
     msg[:robot_num] = robot_id_number
     msg[:num_geom] = length(link.geometry_data)
@@ -108,7 +115,7 @@ function to_lcm(link::Link, robot_id_number::Real)
 end
 
 function to_lcm(robot::Robot, robot_id_number::Real)
-    msg = lcmdrake[:lcmt_viewer_load_robot]()
+    msg = lcmdrake.lcmt_viewer_load_robot()
     msg[:num_links] = length(robot.links)
     for link in robot.links
         push!(msg["link"], to_lcm(link, robot_id_number))
@@ -121,7 +128,7 @@ type Visualizer
     robot_id_number::Int
     lcm::LCM
 
-    function Visualizer(robot::Robot, robot_id_number=1, lcm::LCM=LCM())
+    function Visualizer(robot::Robot, robot_id_number::Integer=1, lcm::LCM=LCM())
         msg = to_lcm(robot, robot_id_number)
         publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
         return new(robot, robot_id_number, lcm)
@@ -129,10 +136,10 @@ type Visualizer
 
 end
 
-Visualizer(data, robot_id_number=1, lcm::LCM=LCM()) = Visualizer(convert(Robot, data), robot_id_number, lcm)
+Visualizer(data, robot_id_number::Integer=1, lcm::LCM=LCM()) = Visualizer(convert(Robot, data), robot_id_number, lcm)
 
 function draw{T <: AffineTransform}(model::Visualizer, link_origins::Vector{T})
-    msg = lcmdrake[:lcmt_viewer_draw]()
+    msg = lcmdrake.lcmt_viewer_draw()
     msg[:timestamp] = convert(Int64, time_ns())
     msg[:num_links] = length(link_origins)
     for (i, origin) in enumerate(link_origins)
@@ -145,7 +152,7 @@ function draw{T <: AffineTransform}(model::Visualizer, link_origins::Vector{T})
 end
 
 function __init__()
-    const global lcmdrake = pyimport("drake")
+    const global lcmdrake = pywrap(pyimport("drake"))
 end
 
 end
