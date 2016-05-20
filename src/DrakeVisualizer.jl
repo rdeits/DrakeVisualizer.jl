@@ -11,7 +11,7 @@ import ColorTypes: RGBA, Colorant, red, green, blue, alpha
 import FixedSizeArrays: destructure
 import Base: convert
 
-const lcmdrake=PyNULL()
+lcmdrake = Module()
 
 export GeometryData,
         Link,
@@ -98,7 +98,7 @@ function fill_geometry_data!(msg::PyObject, geometry::HyperSphere, transform::Af
 end
 
 function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
-    msg = lcmdrake[:lcmt_viewer_geometry_data]()
+    msg = lcmdrake.lcmt_viewer_geometry_data()
     msg[:color] = to_lcm(geometry_data.color)
 
     fill_geometry_data!(msg, geometry_data.geometry, geometry_data.transform)
@@ -106,7 +106,7 @@ function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
 end
 
 function to_lcm(link::Link, robot_id_number::Real)
-    msg = lcmdrake[:lcmt_viewer_link_data]()
+    msg = lcmdrake.lcmt_viewer_link_data()
     msg[:name] = link.name
     msg[:robot_num] = robot_id_number
     msg[:num_geom] = length(link.geometry_data)
@@ -117,7 +117,7 @@ function to_lcm(link::Link, robot_id_number::Real)
 end
 
 function to_lcm(robot::Robot, robot_id_number::Real)
-    msg = lcmdrake[:lcmt_viewer_load_robot]()
+    msg = lcmdrake.lcmt_viewer_load_robot()
     msg[:num_links] = length(robot.links)
     for link in robot.links
         push!(msg["link"], to_lcm(link, robot_id_number))
@@ -141,7 +141,7 @@ end
 Visualizer(data, robot_id_number::Integer=1, lcm::LCM=LCM()) = Visualizer(convert(Robot, data), robot_id_number, lcm)
 
 function draw{T <: AffineTransform}(model::Visualizer, link_origins::Vector{T})
-    msg = lcmdrake[:lcmt_viewer_draw]()
+    msg = lcmdrake.lcmt_viewer_draw()
     msg[:timestamp] = convert(Int64, time_ns())
     msg[:num_links] = length(link_origins)
     for (i, origin) in enumerate(link_origins)
@@ -154,7 +154,7 @@ function draw{T <: AffineTransform}(model::Visualizer, link_origins::Vector{T})
 end
 
 function __init__()
-    copy!(lcmdrake, pyimport("drake"))
+    global lcmdrake = pywrap(pyimport("drake"))
 end
 
 end
