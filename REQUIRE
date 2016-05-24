@@ -1,8 +1,8 @@
 julia 0.4
-PyLCM 0.0.2
+PyLCM 0.0.3
 PyCall
 GeometryTypes
 AffineTransforms
-Quaternions
+Quaternions 0.1.1
 ColorTypes
 FixedSizeArrays
