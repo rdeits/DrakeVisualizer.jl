@@ -63,7 +63,11 @@ function test_robot_draw()
         draw(model, origins)
     end
 end
-
 test_robot_draw()
+
+let
+    ellipsoid = DrakeVisualizer.HyperEllipsoid(Point(1.,0,0.1), Vec(0.3, 0.2, 0.1))
+    Visualizer(ellipsoid)
+end
 
 run(`jupyter nbconvert --to notebook --execute ../demo.ipynb --output ../demo.ipynb`)

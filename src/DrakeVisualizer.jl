@@ -4,6 +4,7 @@ module DrakeVisualizer
 
 using PyLCM
 using GeometryTypes
+import GeometryTypes: origin
 import PyCall: pyimport, PyObject, PyNULL
 import AffineTransforms: AffineTransform, rotationparameters, tformeye
 import Quaternions: qrotation, Quaternion
@@ -12,6 +13,17 @@ import FixedSizeArrays: destructure
 import Base: convert
 
 lcmdrake = Module()
+
+# GeometryTypes doesn't define an Ellipsoid type yet, so we'll make one ourselves!
+type HyperEllipsoid{N, T} <: GeometryPrimitive{N, T}
+    center::Point{N, T}
+    radii::Vec{N, T}
+end
+
+HyperEllipsoid{N, T}(center::Point{N, T}, radii::Vec{N, T}) = HyperEllipsoid{N, T}(center, radii)
+
+origin{N, T}(geometry::HyperEllipsoid{N, T}) = geometry.center
+radii{N, T}(geometry::HyperEllipsoid{N, T}) = geometry.radii
 
 export GeometryData,
         Link,
@@ -53,6 +65,7 @@ to_lcm(color::Colorant) = Float64[red(color); green(color); blue(color); alpha(c
 center(geometry::HyperRectangle) = minimum(geometry) + 0.5 * widths(geometry)
 center(geometry::HyperCube) = minimum(geometry) + 0.5 * widths(geometry)
 center(geometry::HyperSphere) = origin(geometry)
+center(geometry::HyperEllipsoid) = origin(geometry)
 
 function fill_geometry_data!(msg::PyObject, geometry::AbstractMesh, transform::AffineTransform)
     msg[:type] = msg[:MESH]
@@ -95,6 +108,15 @@ function fill_geometry_data!(msg::PyObject, geometry::HyperSphere, transform::Af
     msg[:string_data] = ""
     msg[:float_data] = [radius(geometry)]
     msg[:num_float_data] = 1
+end
+
+function fill_geometry_data!(msg::PyObject, geometry::HyperEllipsoid, transform::AffineTransform)
+    msg[:type] = msg[:ELLIPSOID]
+    msg[:position] = transform.offset + transform.scalefwd * convert(Vector, center(geometry))
+    msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
+    msg[:string_data] = ""
+    msg[:float_data] = convert(Vector, radii(geometry))
+    msg[:num_float_data] = 3
 end
 
 function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
