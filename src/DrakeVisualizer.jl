@@ -20,7 +20,6 @@ type HyperEllipsoid{N, T} <: GeometryPrimitive{N, T}
     radii::Vec{N, T}
 end
 
-HyperEllipsoid{N, T}(center::Point{N, T}, radii::Vec{N, T}) = HyperEllipsoid{N, T}(center, radii)
 
 origin{N, T}(geometry::HyperEllipsoid{N, T}) = geometry.center
 radii{N, T}(geometry::HyperEllipsoid{N, T}) = geometry.radii
