@@ -24,6 +24,15 @@ end
 origin{N, T}(geometry::HyperEllipsoid{N, T}) = geometry.center
 radii{N, T}(geometry::HyperEllipsoid{N, T}) = geometry.radii
 
+type HyperCylinder{N, T} <: GeometryTypes.GeometryPrimitive{N, T}
+    length::T # along last axis
+    radius::T
+    # origin is at center
+end
+
+length(geometry::HyperCylinder) = geometry.length
+radius(geometry::HyperCylinder) = geometry.radius
+
 export GeometryData,
         Link,
         Robot,
@@ -116,6 +125,15 @@ function fill_geometry_data!(msg::PyObject, geometry::HyperEllipsoid, transform:
     msg[:string_data] = ""
     msg[:float_data] = convert(Vector, radii(geometry))
     msg[:num_float_data] = 3
+end
+
+function fill_geometry_data!(msg::PyObject, geometry::HyperCylinder{3}, transform::AffineTransform)
+    msg[:type] = msg[:CYLINDER]
+    msg[:position] = transform.offset
+    msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
+    msg[:string_data] = ""
+    msg[:float_data] = [radius(geometry); length(geometry)]
+    msg[:num_float_data] = 2
 end
 
 function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
