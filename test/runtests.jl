@@ -70,4 +70,9 @@ let
     Visualizer(ellipsoid)
 end
 
+let
+    cylinder = DrakeVisualizer.HyperCylinder{3}(1.0, 0.5)
+    Visualizer(cylinder)
+end
+
 run(`jupyter nbconvert --to notebook --execute ../demo.ipynb --output ../demo.ipynb`)
