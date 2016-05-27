@@ -10,7 +10,7 @@ import AffineTransforms: AffineTransform, rotationparameters, tformeye
 import Quaternions: qrotation, Quaternion
 import ColorTypes: RGBA, Colorant, red, green, blue, alpha
 import FixedSizeArrays: destructure
-import Base: convert
+import Base: convert, length
 
 lcmdrake = Module()
 
