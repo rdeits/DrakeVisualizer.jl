@@ -4,7 +4,7 @@ module DrakeVisualizer
 
 using PyLCM
 using GeometryTypes
-import GeometryTypes: origin
+import GeometryTypes: origin, radius
 import PyCall: pyimport, PyObject, PyNULL
 import AffineTransforms: AffineTransform, rotationparameters, tformeye
 import Quaternions: qrotation, Quaternion
