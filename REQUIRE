@@ -1,4 +1,5 @@
 julia 0.4
+BinDeps
 PyLCM 0.0.3
 PyCall
 GeometryTypes
@@ -6,3 +7,4 @@ AffineTransforms
 Quaternions 0.1.1
 ColorTypes
 FixedSizeArrays
+@osx Homebrew

@@ -12,7 +12,15 @@ import ColorTypes: RGBA, Colorant, red, green, blue, alpha
 import FixedSizeArrays: destructure
 import Base: convert, length
 
-lcmdrake = Module()
+export GeometryData,
+        Link,
+        Robot,
+        Visualizer,
+        draw,
+        reload,
+        new_window
+
+lcmbot = Module()
 
 # GeometryTypes doesn't define an Ellipsoid type yet, so we'll make one ourselves!
 type HyperEllipsoid{N, T} <: GeometryPrimitive{N, T}
@@ -32,12 +40,6 @@ end
 
 length(geometry::HyperCylinder) = geometry.length
 radius(geometry::HyperCylinder) = geometry.radius
-
-export GeometryData,
-        Link,
-        Robot,
-        Visualizer,
-        draw
 
 type GeometryData{T, GeometryType <: AbstractGeometry}
     geometry::GeometryType
@@ -137,7 +139,7 @@ function fill_geometry_data!(msg::PyObject, geometry::HyperCylinder{3}, transfor
 end
 
 function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
-    msg = lcmdrake.lcmt_viewer_geometry_data()
+    msg = lcmbot.viewer_geometry_data_t()
     msg[:color] = to_lcm(geometry_data.color)
 
     fill_geometry_data!(msg, geometry_data.geometry, geometry_data.transform)
@@ -145,7 +147,7 @@ function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
 end
 
 function to_lcm(link::Link, robot_id_number::Real)
-    msg = lcmdrake.lcmt_viewer_link_data()
+    msg = lcmbot.viewer_link_data_t()
     msg[:name] = link.name
     msg[:robot_num] = robot_id_number
     msg[:num_geom] = length(link.geometry_data)
@@ -156,7 +158,7 @@ function to_lcm(link::Link, robot_id_number::Real)
 end
 
 function to_lcm(robot::Robot, robot_id_number::Real)
-    msg = lcmdrake.lcmt_viewer_load_robot()
+    msg = lcmbot.viewer_load_robot_t()
     msg[:num_links] = length(robot.links)
     for link in robot.links
         push!(msg["link"], to_lcm(link, robot_id_number))
@@ -180,7 +182,7 @@ end
 Visualizer(data, robot_id_number::Integer=1, lcm::LCM=LCM()) = Visualizer(convert(Robot, data), robot_id_number, lcm)
 
 function draw{T <: AffineTransform}(model::Visualizer, link_origins::Vector{T})
-    msg = lcmdrake.lcmt_viewer_draw()
+    msg = lcmbot.viewer_draw_t()
     msg[:timestamp] = convert(Int64, time_ns())
     msg[:num_links] = length(link_origins)
     for (i, origin) in enumerate(link_origins)
@@ -192,8 +194,16 @@ function draw{T <: AffineTransform}(model::Visualizer, link_origins::Vector{T})
     publish(model.lcm, "DRAKE_VIEWER_DRAW", msg)
 end
 
+# Reload the current robot within the visualizer window
+reload(vis::Visualizer) = publish(vis.lcm, "DRAKE_VIEWER_LOAD_ROBOT", to_lcm(vis.robot, vis.robot_id_number))
+
+new_window() = @async run(`drake-visualizer`)
+
 function __init__()
-    global lcmdrake = pywrap(pyimport("drake"))
+    depsjl = joinpath(dirname(@__FILE__), "..", "deps", "deps.jl")
+	isfile(depsjl) ? include(depsjl) : error("DrakeVisualizer not properly ",
+	    "installed. Please run\nPkg.build(\"DrakeVisualizer\")")
+    global lcmbot = pywrap(pyimport("bot_core"))
 end
 
 end
