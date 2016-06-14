@@ -5,6 +5,8 @@ using Meshing
 using Base.Test
 import Iterators: product
 
+proc = DrakeVisualizer.launch()
+
 function test_robot_load()
     sdf = SignedDistanceField(x -> norm(x)^2 - 1, HyperRectangle(Vec(0.,0,0), Vec(1.,1,1)));
     mesh = HomogenousMesh(sdf, 0.0)
@@ -71,8 +73,10 @@ let
 end
 
 let
-    cylinder = DrakeVisualizer.HyperCylinder{3}(1.0, 0.5)
+    cylinder = DrakeVisualizer.HyperCylinder{3, Float64}(1.0, 0.5)
     Visualizer(cylinder)
 end
 
 run(`jupyter nbconvert --to notebook --execute ../demo.ipynb --output ../demo.ipynb`)
+
+kill(proc)

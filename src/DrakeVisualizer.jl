@@ -12,6 +12,14 @@ import ColorTypes: RGBA, Colorant, red, green, blue, alpha
 import FixedSizeArrays: destructure
 import Base: convert, length
 
+export GeometryData,
+        Link,
+        Robot,
+        Visualizer,
+        draw,
+        reload
+
+
 lcmdrake = Module()
 
 # GeometryTypes doesn't define an Ellipsoid type yet, so we'll make one ourselves!
@@ -19,7 +27,6 @@ type HyperEllipsoid{N, T} <: GeometryPrimitive{N, T}
     center::Point{N, T}
     radii::Vec{N, T}
 end
-
 
 origin{N, T}(geometry::HyperEllipsoid{N, T}) = geometry.center
 radii{N, T}(geometry::HyperEllipsoid{N, T}) = geometry.radii
@@ -32,12 +39,6 @@ end
 
 length(geometry::HyperCylinder) = geometry.length
 radius(geometry::HyperCylinder) = geometry.radius
-
-export GeometryData,
-        Link,
-        Robot,
-        Visualizer,
-        draw
 
 type GeometryData{T, GeometryType <: AbstractGeometry}
     geometry::GeometryType
@@ -170,14 +171,24 @@ type Visualizer
     lcm::LCM
 
     function Visualizer(robot::Robot, robot_id_number::Integer=1, lcm::LCM=LCM())
-        msg = to_lcm(robot, robot_id_number)
-        publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
-        return new(robot, robot_id_number, lcm)
+        vis = new(robot, robot_id_number, lcm)
+        reload(vis)
+        vis
     end
 
 end
 
 Visualizer(data, robot_id_number::Integer=1, lcm::LCM=LCM()) = Visualizer(convert(Robot, data), robot_id_number, lcm)
+
+function reload(vis::Visualizer)
+    msg = to_lcm(vis.robot, vis.robot_id_number)
+    publish(vis.lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
+end
+
+function launch()
+    (stream, proc) = open(`drake-visualizer`)
+    proc
+end
 
 function draw{T <: AffineTransform}(model::Visualizer, link_origins::Vector{T})
     msg = lcmdrake.lcmt_viewer_draw()
