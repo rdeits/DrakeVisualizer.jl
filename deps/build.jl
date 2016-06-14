@@ -36,7 +36,9 @@ end
             provides(SimpleBuild,
                 (@build_steps begin
                     () -> Homebrew.add("staticfloat/juliadeps/hdf5")
-                    () -> Homebrew.brew(`install robotlocomotion/director/vtk5 --with-qt`)
+                    () -> run(`wget "https://www.dropbox.com/s/r0o7b3zrv6een6o/vtk5-5.10.1_2.mavericks.bottle.1.tar.gz"`)
+                    () -> Homebrew.brew(`install --force-bottle vtk5-5.10.1_2.mavericks.bottle.1.tar.gz`)
+                    () -> Homebrew.brew(`link --force vtk5`)
                 end), vtk5, os=:Darwin)
         end
     end
