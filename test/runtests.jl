@@ -77,6 +77,9 @@ let
     Visualizer(cylinder)
 end
 
-run(`jupyter nbconvert --to notebook --execute ../demo.ipynb --output ../demo.ipynb`)
+let
+    demo_file = "../demo.ipynb"
+    run(`jupyter nbconvert --to notebook --execute $(demo_file) --output $(demo_file)`)
+end
 
 kill(proc)
