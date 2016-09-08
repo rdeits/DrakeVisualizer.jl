@@ -5,7 +5,7 @@ module DrakeVisualizer
 using PyLCM
 using GeometryTypes
 import GeometryTypes: origin, radius
-import PyCall: pyimport, PyObject, PyNULL, pywrap
+import PyCall: pyimport, PyObject, PyNULL
 import AffineTransforms: AffineTransform, rotationparameters, tformeye
 import Quaternions: qrotation, Quaternion
 import ColorTypes: RGBA, Colorant, red, green, blue, alpha
@@ -20,7 +20,7 @@ export GeometryData,
         reload
 
 
-lcmdrake = Module()
+const lcmdrake = PyNULL()
 
 # GeometryTypes doesn't define an Ellipsoid type yet, so we'll make one ourselves!
 type HyperEllipsoid{N, T} <: GeometryPrimitive{N, T}
@@ -135,7 +135,7 @@ function fill_geometry_data!(msg::PyObject, geometry::HyperCylinder{3}, transfor
 end
 
 function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
-    msg = lcmdrake.lcmt_viewer_geometry_data()
+    msg = lcmdrake[:lcmt_viewer_geometry_data]()
     msg[:color] = to_lcm(geometry_data.color)
 
     fill_geometry_data!(msg, geometry_data.geometry, geometry_data.transform)
@@ -143,7 +143,7 @@ function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
 end
 
 function to_lcm(link::Link, robot_id_number::Real)
-    msg = lcmdrake.lcmt_viewer_link_data()
+    msg = lcmdrake[:lcmt_viewer_link_data]()
     msg[:name] = link.name
     msg[:robot_num] = robot_id_number
     msg[:num_geom] = length(link.geometry_data)
@@ -154,7 +154,7 @@ function to_lcm(link::Link, robot_id_number::Real)
 end
 
 function to_lcm(robot::Robot, robot_id_number::Real)
-    msg = lcmdrake.lcmt_viewer_load_robot()
+    msg = lcmdrake[:lcmt_viewer_load_robot]()
     msg[:num_links] = length(robot.links)
     for link in robot.links
         push!(msg["link"], to_lcm(link, robot_id_number))
@@ -188,7 +188,7 @@ function launch()
 end
 
 function draw{T <: AffineTransform}(model::Visualizer, link_origins::Vector{T})
-    msg = lcmdrake.lcmt_viewer_draw()
+    msg = lcmdrake[:lcmt_viewer_draw]()
     msg[:timestamp] = convert(Int64, time_ns())
     msg[:num_links] = length(link_origins)
     for (i, origin) in enumerate(link_origins)
@@ -201,7 +201,7 @@ function draw{T <: AffineTransform}(model::Visualizer, link_origins::Vector{T})
 end
 
 function __init__()
-    global lcmdrake = pywrap(pyimport("drake"))
+    copy!(lcmdrake, pyimport("drake"))
 end
 
 end
