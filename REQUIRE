@@ -2,8 +2,8 @@ julia 0.4
 PyLCM 0.0.3
 PyCall
 GeometryTypes
-AffineTransforms
-Quaternions 0.1.1
 ColorTypes
-FixedSizeArrays
 Meshing
+Rotations
+CoordinateTransformations
+StaticArrays

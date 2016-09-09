@@ -6,10 +6,13 @@ using PyLCM
 using GeometryTypes
 import GeometryTypes: origin, radius
 import PyCall: pyimport, PyObject, PyNULL
-import AffineTransforms: AffineTransform, rotationparameters, tformeye
-import Quaternions: qrotation, Quaternion
+# import AffineTransforms: AffineTransform, rotationparameters, tformeye
+# import Quaternions: qrotation, Quaternion
+import Rotations: Rotation, Quat
+import CoordinateTransformations: Transformation, transform_deriv, IdentityTransformation, AbstractAffineMap
 import ColorTypes: RGBA, Colorant, red, green, blue, alpha
-import FixedSizeArrays: destructure
+# import FixedSizeArrays: destructure
+import StaticArrays: SVector
 import Base: convert, length
 
 export GeometryData,
@@ -17,10 +20,12 @@ export GeometryData,
         Robot,
         Visualizer,
         draw,
-        reload
+        reload_model
 
 
 const lcmdrake = PyNULL()
+
+destructure{T,N}(A::Array{T,N}) = reinterpret(eltype(T), A, (size(T)..., size(A)...))
 
 # GeometryTypes doesn't define an Ellipsoid type yet, so we'll make one ourselves!
 type HyperEllipsoid{N, T} <: GeometryPrimitive{N, T}
@@ -40,13 +45,13 @@ end
 length(geometry::HyperCylinder) = geometry.length
 radius(geometry::HyperCylinder) = geometry.radius
 
-type GeometryData{T, GeometryType <: AbstractGeometry}
+type GeometryData{TransformType <: Transformation, GeometryType <: AbstractGeometry}
     geometry::GeometryType
-    transform::AffineTransform{T, 3}
+    transform::TransformType
     color::RGBA{Float64}
 end
-GeometryData{T, GeometryType <: AbstractGeometry}(geometry::GeometryType,
-    transform::AffineTransform{T, 3}=tformeye(3),
+GeometryData{TransformType <: Transformation, GeometryType <: AbstractGeometry}(geometry::GeometryType,
+    transform::TransformType=IdentityTransformation(),
     color=RGBA{Float64}(1., 0, 0, 0.5)) = GeometryData(geometry, transform, convert(RGBA{Float64}, color))
 
 type Link
@@ -65,7 +70,12 @@ convert(::Type{Robot}, links::AbstractArray{Link}) = Robot(convert(Vector{Link},
 convert(::Type{Robot}, geom::GeometryData) = convert(Robot, convert(Link, geom))
 convert(::Type{Robot}, geometry::AbstractGeometry) = convert(Robot, GeometryData(geometry))
 
-to_lcm(q::Quaternion) = Float64[q.s; q.v1; q.v2; q.v3]
+to_lcm(q::Quat) = SVector{4, Float64}(q.w, q.x, q.y, q.z)
+to_lcm_quaternion(matrix::AbstractMatrix) = to_lcm(Quat(matrix))
+to_lcm_quaternion(matrix::UniformScaling) = to_lcm(Quat(1.0, 0, 0, 0))
+to_lcm_quaternion(transform::AbstractAffineMap) = to_lcm_quaternion(transform_deriv(transform, SVector{3, Float64}(0,0,0)))
+to_lcm_quaternion(transform::IdentityTransformation) = to_lcm_quaternion(Quat(1.0, 0, 0, 0))
+
 to_lcm(color::Colorant) = Float64[red(color); green(color); blue(color); alpha(color)]
 
 center(geometry::HyperRectangle) = minimum(geometry) + 0.5 * widths(geometry)
@@ -73,10 +83,10 @@ center(geometry::HyperCube) = minimum(geometry) + 0.5 * widths(geometry)
 center(geometry::HyperSphere) = origin(geometry)
 center(geometry::HyperEllipsoid) = origin(geometry)
 
-function fill_geometry_data!(msg::PyObject, geometry::AbstractMesh, transform::AffineTransform)
+function fill_geometry_data!(msg::PyObject, geometry::AbstractMesh, transform::Transformation)
     msg[:type] = msg[:MESH]
-    msg[:position] = transform.offset
-    msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
+    msg[:position] = transform(SVector{3, Float64}(0, 0, 0))
+    msg[:quaternion] = to_lcm_quaternion(transform)
     msg[:string_data] = ""
     float_data = Float64[length(vertices(geometry));
         length(faces(geometry));
@@ -86,10 +96,10 @@ function fill_geometry_data!(msg::PyObject, geometry::AbstractMesh, transform::A
     msg[:num_float_data] = length(float_data)
 end
 
-function fill_geometry_data!(msg::PyObject, geometry::HyperRectangle, transform::AffineTransform)
+function fill_geometry_data!(msg::PyObject, geometry::HyperRectangle, transform::Transformation)
     msg[:type] = msg[:BOX]
-    msg[:position] = transform.offset + transform.scalefwd * convert(Vector, center(geometry))
-    msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
+    msg[:position] = convert(SVector{3, Float64}, transform(center(geometry)))
+    msg[:quaternion] = to_lcm_quaternion(transform)
     msg[:string_data] = ""
     float_data = convert(Vector, widths(geometry))
     msg[:float_data] = float_data
@@ -97,38 +107,38 @@ function fill_geometry_data!(msg::PyObject, geometry::HyperRectangle, transform:
 
 end
 
-function fill_geometry_data!(msg::PyObject, geometry::HyperCube, transform::AffineTransform)
+function fill_geometry_data!(msg::PyObject, geometry::HyperCube, transform::Transformation)
     msg[:type] = msg[:BOX]
-    msg[:position] = transform.offset + transform.scalefwd * convert(Vector, center(geometry))
-    msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
+    msg[:position] = convert(SVector{3, Float64}, transform(center(geometry)))
+    msg[:quaternion] = to_lcm_quaternion(transform)
     msg[:string_data] = ""
     float_data = convert(Vector, widths(geometry))
     msg[:float_data] = float_data
     msg[:num_float_data] = length(float_data)
 end
 
-function fill_geometry_data!(msg::PyObject, geometry::HyperSphere, transform::AffineTransform)
+function fill_geometry_data!(msg::PyObject, geometry::HyperSphere, transform::Transformation)
     msg[:type] = msg[:SPHERE]
-    msg[:position] = transform.offset + transform.scalefwd * convert(Vector, center(geometry))
-    msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
+    msg[:position] = convert(SVector{3, Float64}, transform(center(geometry)))
+    msg[:quaternion] = to_lcm_quaternion(transform)
     msg[:string_data] = ""
     msg[:float_data] = [radius(geometry)]
     msg[:num_float_data] = 1
 end
 
-function fill_geometry_data!(msg::PyObject, geometry::HyperEllipsoid, transform::AffineTransform)
+function fill_geometry_data!(msg::PyObject, geometry::HyperEllipsoid, transform::Transformation)
     msg[:type] = msg[:ELLIPSOID]
-    msg[:position] = transform.offset + transform.scalefwd * convert(Vector, center(geometry))
-    msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
+    msg[:position] = convert(SVector{3, Float64}, transform(center(geometry)))
+    msg[:quaternion] = to_lcm_quaternion(transform)
     msg[:string_data] = ""
     msg[:float_data] = convert(Vector, radii(geometry))
     msg[:num_float_data] = 3
 end
 
-function fill_geometry_data!(msg::PyObject, geometry::HyperCylinder{3}, transform::AffineTransform)
+function fill_geometry_data!(msg::PyObject, geometry::HyperCylinder{3}, transform::Transformation)
     msg[:type] = msg[:CYLINDER]
-    msg[:position] = transform.offset
-    msg[:quaternion] = to_lcm(qrotation(rotationparameters(transform.scalefwd)))
+    msg[:position] = transform(SVector{3, Float64}(0, 0, 0))
+    msg[:quaternion] = to_lcm_quaternion(transform)
     msg[:string_data] = ""
     msg[:float_data] = [radius(geometry); length(geometry)]
     msg[:num_float_data] = 2
@@ -169,7 +179,7 @@ type Visualizer
 
     function Visualizer(robot::Robot, robot_id_number::Integer=1, lcm::LCM=LCM())
         vis = new(robot, robot_id_number, lcm)
-        reload(vis)
+        reload_model(vis)
         vis
     end
 
@@ -177,7 +187,7 @@ end
 
 Visualizer(data, robot_id_number::Integer=1, lcm::LCM=LCM()) = Visualizer(convert(Robot, data), robot_id_number, lcm)
 
-function reload(vis::Visualizer)
+function reload_model(vis::Visualizer)
     msg = to_lcm(vis.robot, vis.robot_id_number)
     publish(vis.lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
 end
@@ -187,15 +197,17 @@ function launch()
     proc
 end
 
-function draw{T <: AffineTransform}(model::Visualizer, link_origins::Vector{T})
+function draw{T <: Transformation}(model::Visualizer, link_origins::Vector{T})
     msg = lcmdrake[:lcmt_viewer_draw]()
     msg[:timestamp] = convert(Int64, time_ns())
     msg[:num_links] = length(link_origins)
     for (i, origin) in enumerate(link_origins)
         push!(msg["link_name"], model.robot.links[i].name)
         push!(msg["robot_num"], model.robot_id_number)
-        push!(msg["position"], origin.offset)
-        push!(msg["quaternion"], to_lcm(qrotation(rotationparameters(origin.scalefwd))))
+        push!(msg["position"], convert(SVector{3, Float64}, origin(SVector{3, Float64}(0,0,0))))
+        # push!(msg["position"], origin.offset)
+        push!(msg["quaternion"], to_lcm_quaternion(origin))
+        # push!(msg["quaternion"], to_lcm(qrotation(rotationparameters(origin.scalefwd))))
     end
     publish(model.lcm, "DRAKE_VIEWER_DRAW", msg)
 end

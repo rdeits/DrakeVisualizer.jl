@@ -1,16 +1,16 @@
 using DrakeVisualizer
 using GeometryTypes
-using AffineTransforms
+using CoordinateTransformations
 using Meshing
 using Base.Test
 import Iterators: product
 
-proc = DrakeVisualizer.launch()
+# proc = DrakeVisualizer.launch()
 
 function test_robot_load()
     sdf = SignedDistanceField(x -> norm(x)^2 - 1, HyperRectangle(Vec(0.,0,0), Vec(1.,1,1)));
     mesh = HomogenousMesh(sdf, 0.0)
-    geom = GeometryData(mesh, tformeye(3))
+    geom = GeometryData(mesh)
     robot = convert(Robot, geom)
     vis = Visualizer(robot, 1)
 end
@@ -22,7 +22,7 @@ function test_link_list_load()
     for i = 1:2
         sdf = SignedDistanceField(x -> norm(x)^2 - levels[i], HyperRectangle(Vec(-1.,-1,-1), Vec(2.,2,2)));
         mesh = HomogenousMesh(sdf, 0.0)
-        geom = GeometryData(mesh, tformeye(3))
+        geom = GeometryData(mesh)
         push!(links, Link(geom))
     end
     vis = Visualizer(links, 1)
@@ -32,7 +32,7 @@ test_link_list_load()
 function test_geom_load()
     sdf = SignedDistanceField(x -> norm(x)^2 - 0.5, HyperRectangle(Vec(0.,0,0), Vec(1.,1,1)));
     mesh = HomogenousMesh(sdf, 0.0)
-    geom = GeometryData(mesh, tformeye(3))
+    geom = GeometryData(mesh)
     vis = Visualizer(geom)
 end
 test_geom_load()
@@ -49,10 +49,13 @@ function test_robot_draw()
 
 
     function link_origins(joint_angles)
-        transforms = Array{AffineTransform}(length(link_lengths))
-        transforms[1] = tformrotate([0;0;1], joint_angles[1])
+        transforms = Array{Transformation}(length(link_lengths))
+        transforms[1] = LinearMap(AngleAxis(joint_angles[1], 0, 0, 1.0))
         for i = 2:length(link_lengths)
-            transforms[i] = transforms[i-1] * tformtranslate([link_lengths[i-1]; 0; 0]) * tformrotate([0.;0;1], joint_angles[i])
+            T = compose(Translation(link_lengths[i-1], 0, 0),
+                        LinearMap(AngleAxis(joint_angles[i], 0, 0, 1.0))
+                        )
+            transforms[i] = compose(transforms[i-1], T)
         end
         transforms
     end
@@ -82,4 +85,4 @@ end
 #     run(`jupyter nbconvert --to notebook --execute $(demo_file) --output $(demo_file)`)
 # end
 
-kill(proc)
+# kill(proc)
