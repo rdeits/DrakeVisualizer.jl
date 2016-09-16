@@ -83,16 +83,30 @@ function surface_mesh(f::Function, bounds::HyperRectangle,
 end
 
 function GeometryData(f::Function,
-                      lower_bound::Union{AbstractVector, Vec},
-                      upper_bound::Union{AbstractVector, Vec},
+                      lower_bound::Vec,
+                      upper_bound::Vec,
                       isosurface_value::Number=0.0,
                       transform::Transformation=IdentityTransformation(),
                       color=RGBA{Float64}(1., 0, 0, 0.5))
-    bounds = HyperRectangle(convert(Vec, lower_bound),
-                            convert(Vec, upper_bound - lower_bound))
+    bounds = HyperRectangle(lower_bound, upper_bound - lower_bound)
     mesh = surface_mesh(f, bounds, isosurface_value)
     GeometryData(mesh, transform, color)
 end
+
+function GeometryData(f::Function,
+                      lower_bound::AbstractVector,
+                      upper_bound::AbstractVector,
+                      isosurface_value::Number=0.0,
+                      transform::Transformation=IdentityTransformation(),
+                      color=RGBA{Float64}(1., 0, 0, 0.5))
+    GeometryData(f,
+                 Vec{3, Float64}(lower_bound[1], lower_bound[2], lower_bound[3]),
+                 Vec{3, Float64}(upper_bound[1], upper_bound[2], upper_bound[3]),
+                 isosurface_value,
+                 transform,
+                 color)
+end
+
 
 type Link
     geometry_data::Vector{GeometryData}
