@@ -5,13 +5,11 @@ module DrakeVisualizer
 using PyLCM
 using GeometryTypes
 import GeometryTypes: origin, radius
+import Meshing
 import PyCall: pyimport, PyObject, PyNULL
-# import AffineTransforms: AffineTransform, rotationparameters, tformeye
-# import Quaternions: qrotation, Quaternion
 import Rotations: Rotation, Quat
 import CoordinateTransformations: Transformation, transform_deriv, IdentityTransformation, AbstractAffineMap
 import ColorTypes: RGBA, Colorant, red, green, blue, alpha
-# import FixedSizeArrays: destructure
 import StaticArrays: SVector
 import Base: convert, length
 
@@ -19,6 +17,11 @@ export GeometryData,
         Link,
         Robot,
         Visualizer,
+        HyperRectangle,
+        HyperEllipsoid,
+        HyperCylinder,
+        HyperSphere,
+        HyperCube,
         draw,
         reload_model
 
@@ -50,9 +53,43 @@ type GeometryData{TransformType <: Transformation, GeometryType <: AbstractGeome
     transform::TransformType
     color::RGBA{Float64}
 end
+
 GeometryData{TransformType <: Transformation, GeometryType <: AbstractGeometry}(geometry::GeometryType,
     transform::TransformType=IdentityTransformation(),
-    color=RGBA{Float64}(1., 0, 0, 0.5)) = GeometryData(geometry, transform, convert(RGBA{Float64}, color))
+    color=RGBA{Float64}(1., 0, 0, 0.5)) = GeometryData{TransformType, GeometryType}(geometry, transform, convert(RGBA{Float64}, color))
+
+function surface_mesh(f::Function, bounds::HyperRectangle,
+                      isosurface_value::Number=0.0,
+                      resolution::Real=0.1)
+    # Extract an isosurface from a vector-input function in 3 dimensions and
+    # return it as a mesh. This function mostly exists to work around bugs in
+    # Meshing.jl: specifically its weird handling of non-zero isosurfaces
+    # and its incorrect mesh point scaling:
+    # https://github.com/JuliaGeometry/GeometryTypes.jl/issues/49
+    window_width = widths(bounds)
+    sdf = SignedDistanceField(x -> f(SVector{3, Float64}(x)) - isosurface_value,
+                              bounds,
+                              resolution)
+
+    # We've already accounted for the isosurface value in the construction of
+    # the SDF, so we set the iso value here to 0.
+    mesh = HomogenousMesh(sdf, 0.0)
+
+    # Rescale the mesh points and then construct a new mesh using the rescaled
+    # points and the original faces.
+    lb = minimum(bounds)
+    rescaled_points = Point{3,Float64}[Vec(v-1) ./ (Vec(size(sdf))-1) .* window_width .+ lb for v in vertices(mesh)]
+    HomogenousMesh(rescaled_points, mesh.faces)
+end
+
+function GeometryData(f::Function,
+                      bounds::HyperRectangle,
+                      isosurface_value::Number=0.0,
+                      transform::Transformation=IdentityTransformation(),
+                      color=RGBA{Float64}(1., 0, 0, 0.5))
+    mesh = surface_mesh(f, bounds, isosurface_value)
+    GeometryData(mesh, transform, color)
+end
 
 type Link
     geometry_data::Vector{GeometryData}

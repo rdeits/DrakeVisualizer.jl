@@ -8,9 +8,9 @@ import Iterators: product
 # proc = DrakeVisualizer.launch()
 
 function test_robot_load()
-    sdf = SignedDistanceField(x -> norm(x)^2 - 1, HyperRectangle(Vec(0.,0,0), Vec(1.,1,1)));
-    mesh = HomogenousMesh(sdf, 0.0)
-    geom = GeometryData(mesh)
+    f = x -> norm(x)^2
+    bounds = HyperRectangle(Vec(0.,0,0), Vec(1.,1,1))
+    geom = GeometryData(f, bounds)
     robot = convert(Robot, geom)
     vis = Visualizer(robot, 1)
 end
@@ -20,9 +20,9 @@ function test_link_list_load()
     links = Link[]
     levels = [0.5; 1]
     for i = 1:2
-        sdf = SignedDistanceField(x -> norm(x)^2 - levels[i], HyperRectangle(Vec(-1.,-1,-1), Vec(2.,2,2)));
-        mesh = HomogenousMesh(sdf, 0.0)
-        geom = GeometryData(mesh)
+        f = x -> norm(x)^2
+        bounds = HyperRectangle(Vec(0.,0,0), Vec(1.,1,1))
+        geom = GeometryData(f, bounds, levels[i])
         push!(links, Link(geom))
     end
     vis = Visualizer(links, 1)
@@ -30,9 +30,10 @@ end
 test_link_list_load()
 
 function test_geom_load()
-    sdf = SignedDistanceField(x -> norm(x)^2 - 0.5, HyperRectangle(Vec(0.,0,0), Vec(1.,1,1)));
-    mesh = HomogenousMesh(sdf, 0.0)
-    geom = GeometryData(mesh)
+    f = x -> norm(x)^2
+    bounds = HyperRectangle(Vec(0.,0,0), Vec(1.,1,1))
+    iso_level = 0.5
+    geom = GeometryData(f, bounds, iso_level)
     vis = Visualizer(geom)
 end
 test_geom_load()
@@ -80,9 +81,9 @@ let
     Visualizer(cylinder)
 end
 
-# let
-#     demo_file = "../demo.ipynb"
-#     run(`jupyter nbconvert --to notebook --execute $(demo_file) --output $(demo_file)`)
-# end
+let
+    demo_file = "../demo.ipynb"
+    run(`jupyter nbconvert --to notebook --execute $(demo_file) --output $(demo_file)`)
+end
 
 # kill(proc)
