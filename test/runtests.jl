@@ -10,7 +10,7 @@ import Iterators: product
 function test_robot_load()
     f = x -> norm(x)^2
     bounds = HyperRectangle(Vec(0.,0,0), Vec(1.,1,1))
-    geom = GeometryData(f, minimum(bounds), maximum(bounds))
+    geom = contour_mesh(f, minimum(bounds), maximum(bounds))
     robot = convert(Robot, geom)
     vis = Visualizer(robot, 1)
 end
@@ -21,7 +21,7 @@ function test_link_list_load()
     levels = [0.5; 1]
     for i = 1:2
         f = x -> norm(x)^2
-        geom = GeometryData(f, Vec(0.,0,0), Vec(1.,1,1), levels[i])
+        geom = contour_mesh(f, Vec(0.,0,0), Vec(1.,1,1), levels[i])
         push!(links, Link(geom))
     end
     vis = Visualizer(links, 1)
@@ -31,7 +31,7 @@ test_link_list_load()
 function test_geom_load()
     f = x -> norm(x)^2
     iso_level = 0.5
-    geom = GeometryData(f, [0.,0,0], [1.,1,1], iso_level)
+    geom = GeometryData(contour_mesh(f, [0.,0,0], [1.,1,1], iso_level))
     vis = Visualizer(geom)
 end
 test_geom_load()

@@ -22,6 +22,7 @@ export GeometryData,
         HyperCylinder,
         HyperSphere,
         HyperCube,
+        contour_mesh,
         draw,
         reload_model
 
@@ -58,9 +59,10 @@ GeometryData{TransformType <: Transformation, GeometryType <: AbstractGeometry}(
     transform::TransformType=IdentityTransformation(),
     color=RGBA{Float64}(1., 0, 0, 0.5)) = GeometryData{TransformType, GeometryType}(geometry, transform, convert(RGBA{Float64}, color))
 
-function surface_mesh(f::Function, bounds::HyperRectangle,
+function contour_mesh(f::Function,
+                      bounds::HyperRectangle,
                       isosurface_value::Number=0.0,
-                      resolution::Real=0.1)
+                      resolution::Real=maximum(widths(bounds))/20.0)
     # Extract an isosurface from a vector-input function in 3 dimensions and
     # return it as a mesh. This function mostly exists to work around bugs in
     # Meshing.jl: specifically its weird handling of non-zero isosurfaces
@@ -82,31 +84,26 @@ function surface_mesh(f::Function, bounds::HyperRectangle,
     HomogenousMesh(rescaled_points, mesh.faces)
 end
 
-function GeometryData(f::Function,
-                      lower_bound::Vec,
-                      upper_bound::Vec,
-                      isosurface_value::Number=0.0,
-                      transform::Transformation=IdentityTransformation(),
-                      color=RGBA{Float64}(1., 0, 0, 0.5))
-    bounds = HyperRectangle(lower_bound, upper_bound - lower_bound)
-    mesh = surface_mesh(f, bounds, isosurface_value)
-    GeometryData(mesh, transform, color)
-end
+contour_mesh(f::Function,
+             lower_bound::Vec,
+             upper_bound::Vec,
+             isosurface_value::Number=0.0,
+             resolution::Real=maximum(upper_bound - lower_bound)/20.0) = (
+    contour_mesh(f,
+                 HyperRectangle(lower_bound, upper_bound - lower_bound),
+                 isosurface_value,
+                 resolution))
 
-function GeometryData(f::Function,
-                      lower_bound::AbstractVector,
-                      upper_bound::AbstractVector,
-                      isosurface_value::Number=0.0,
-                      transform::Transformation=IdentityTransformation(),
-                      color=RGBA{Float64}(1., 0, 0, 0.5))
-    GeometryData(f,
+contour_mesh(f::Function,
+             lower_bound::AbstractVector,
+             upper_bound::AbstractVector,
+             isosurface_value::Number=0.0,
+             resolution::Real=maximum(upper_bound - lower_bound)/20.0) = (
+    contour_mesh(f,
                  Vec{3, Float64}(lower_bound[1], lower_bound[2], lower_bound[3]),
                  Vec{3, Float64}(upper_bound[1], upper_bound[2], upper_bound[3]),
                  isosurface_value,
-                 transform,
-                 color)
-end
-
+                 resolution))
 
 type Link
     geometry_data::Vector{GeometryData}
@@ -119,6 +116,7 @@ type Robot
 end
 
 convert(::Type{Link}, geom::GeometryData) = Link([geom])
+convert(::Type{Link}, geometry::AbstractGeometry) = Link(GeometryData(geometry))
 convert(::Type{Robot}, link::Link) = Robot([link])
 convert(::Type{Robot}, links::AbstractArray{Link}) = Robot(convert(Vector{Link}, links))
 convert(::Type{Robot}, geom::GeometryData) = convert(Robot, convert(Link, geom))
