@@ -6,7 +6,7 @@ using PyLCM
 using GeometryTypes
 import GeometryTypes: origin, radius
 import Meshing
-import PyCall: pyimport, PyObject, PyNULL
+import PyCall: pyimport, PyObject, PyNULL, PyVector
 import Rotations: Rotation, Quat
 import CoordinateTransformations: Transformation, transform_deriv, IdentityTransformation, AbstractAffineMap
 import ColorTypes: RGBA, Colorant, red, green, blue, alpha
@@ -27,7 +27,7 @@ export GeometryData,
         reload_model
 
 
-const lcmdrake = PyNULL()
+const drakevis = PyNULL()
 
 destructure{T,N}(A::Array{T,N}) = reinterpret(eltype(T), A, (size(T)..., size(A)...))
 
@@ -197,7 +197,7 @@ function fill_geometry_data!(msg::PyObject, geometry::HyperCylinder{3}, transfor
 end
 
 function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
-    msg = lcmdrake[:lcmt_viewer_geometry_data]()
+    msg = drakevis[:lcmt_viewer_geometry_data]()
     msg[:color] = to_lcm(geometry_data.color)
 
     fill_geometry_data!(msg, geometry_data.geometry, geometry_data.transform)
@@ -205,7 +205,7 @@ function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
 end
 
 function to_lcm(link::Link, robot_id_number::Real)
-    msg = lcmdrake[:lcmt_viewer_link_data]()
+    msg = drakevis[:lcmt_viewer_link_data]()
     msg[:name] = link.name
     msg[:robot_num] = robot_id_number
     msg[:num_geom] = length(link.geometry_data)
@@ -216,7 +216,7 @@ function to_lcm(link::Link, robot_id_number::Real)
 end
 
 function to_lcm(robot::Robot, robot_id_number::Real)
-    msg = lcmdrake[:lcmt_viewer_load_robot]()
+    msg = drakevis[:lcmt_viewer_load_robot]()
     msg[:num_links] = length(robot.links)
     for link in robot.links
         push!(msg["link"], to_lcm(link, robot_id_number))
@@ -250,7 +250,7 @@ function launch()
 end
 
 function draw{T <: Transformation}(model::Visualizer, link_origins::Vector{T})
-    msg = lcmdrake[:lcmt_viewer_draw]()
+    msg = drakevis[:lcmt_viewer_draw]()
     msg[:timestamp] = convert(Int64, time_ns())
     msg[:num_links] = length(link_origins)
     for (i, origin) in enumerate(link_origins)
@@ -265,7 +265,10 @@ function draw{T <: Transformation}(model::Visualizer, link_origins::Vector{T})
 end
 
 function __init__()
-    copy!(lcmdrake, pyimport("drake"))
+    lcmtypes_path = abspath(joinpath(Pkg.dir("DrakeVisualizer"), "src", "lcmtypes"))
+    println("adding: $(lcmtypes_path) to the python path")
+    unshift!(PyVector(pyimport("sys")["path"]), lcmtypes_path)
+    copy!(drakevis, pyimport("drakevis"))
 end
 
 end
