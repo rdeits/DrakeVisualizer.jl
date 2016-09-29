@@ -229,9 +229,11 @@ type Visualizer
     robot_id_number::Int
     lcm::LCM
 
-    function Visualizer(robot::Robot, robot_id_number::Integer=1, lcm::LCM=LCM())
+    function Visualizer(robot::Robot, robot_id_number::Integer=1, lcm::LCM=LCM(); load_now::Bool=true)
         vis = new(robot, robot_id_number, lcm)
-        reload_model(vis)
+        if load_now
+            reload_model(vis)
+        end
         vis
     end
 
@@ -239,9 +241,30 @@ end
 
 Visualizer(data, robot_id_number::Integer=1, lcm::LCM=LCM()) = Visualizer(convert(Robot, data), robot_id_number, lcm)
 
+function Visualizer(robots::Vector{Robot}, lcm::LCM=LCM())
+    visualizers = Vector{Visualizer}()
+    for (i, robot) in enumerate(robots)
+        push!(visualizers, Visualizer(robot, i, lcm; load_now=false))
+    end
+    reload_model(visualizers)
+    visualizers
+end
+
 function reload_model(vis::Visualizer)
     msg = to_lcm(vis.robot, vis.robot_id_number)
     publish(vis.lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
+end
+
+function reload_model(visualizers::AbstractArray{Visualizer})
+    msg = drakevis[:lcmt_viewer_load_robot]()
+    msg[:num_links] = 0
+    for vis in visualizers
+        msg[:num_links] = msg[:num_links] + length(vis.robot.links)
+        for link in vis.robot.links
+            push!(msg["link"], to_lcm(link, vis.robot_id_number))
+        end
+    end
+    publish(visualizers[1].lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
 end
 
 function launch()
