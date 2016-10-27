@@ -3,6 +3,7 @@ using GeometryTypes
 using CoordinateTransformations
 using Meshing
 using Base.Test
+using IJulia
 import Iterators: product
 
 proc = DrakeVisualizer.new_window()
@@ -86,8 +87,9 @@ try
     end
 
     @testset "demo_notebook" begin
+        jupyter = IJulia.jupyter
         demo_file = "../demo.ipynb"
-        run(`jupyter nbconvert --to notebook --execute $(demo_file) --output $(demo_file)`)
+        run(`$jupyter nbconvert --to notebook --execute $(demo_file) --output $(demo_file)`)
     end
 finally
     kill(proc)
