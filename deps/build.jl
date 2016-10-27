@@ -30,6 +30,17 @@ director_version = v"0.1.0"
         CreateDirectory(joinpath(basedir, "usr"))
         (`tar xzf $(joinpath(basedir, "downloads", "director.tar.gz")) --directory=usr --strip-components=1`)
     end), director)
+else if is_apple()
+    deps = [
+        director = library_dependency("ddApp", aliases=["libddApp"])
+    ]
+    provides(BuildProcess, (@build_steps begin
+        FileDownloader("http://people.csail.mit.edu/patmarion/software/director/releases/director-$(director_version)-mac.tar.gz",
+                       joinpath(basedir, "downloads", "director.tar.gz"))
+        CreateDirectory(joinpath(basedir, "usr"))
+        (`tar xzf $(joinpath(basedir, "downloads", "director.tar.gz")) --directory=usr --strip-components=1`)
+    end), director)
+
 end
 
 @BinDeps.install Dict(:ddApp => :libddApp)
