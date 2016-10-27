@@ -19,7 +19,7 @@ On macOS, the binaries should already include all dependencies.
 
 You can launch the viewer application with
 
-  julia> DrakeVisualizer.new_window()
+    julia> DrakeVisualizer.new_window()
 
 which is just a convenience wrapper around a call to the `drake-visualizer` executable, included in the `director` binaries or source installation.
 
