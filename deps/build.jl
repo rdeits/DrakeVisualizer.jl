@@ -15,7 +15,7 @@ director_version = v"0.1.0"
         director = library_dependency("ddApp", aliases=["libddApp"], depends=[python_vtk, python])
     ]
     provides(SimpleBuild,
-        () -> run(`sudo apt-get install libvtk5-qt4 python-vtk`),
+        () -> run(`sudo apt-get install libvtk5-qt4-dev python-vtk`),
         python_vtk)
     provides(AptGet, Dict("python2.7" => python))
     provides(BuildProcess, (@build_steps begin
