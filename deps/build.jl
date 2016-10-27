@@ -14,6 +14,12 @@ director_version = v"0.1.0"
             end)
         director = library_dependency("ddApp", aliases=["libddApp"], depends=[python_vtk, python])
     ]
+
+    # The vtkPython libraries all have undeclared dependencies on libpython2.7,
+    # so they cannot be dlopen()ed without missing symbol errors. As a result,
+    # we can't use the regular library_dependency mechanism to look for vtk5
+    # and python-vtk. Instead, we combined both dependencies into "python_vtk"
+    # and make one build rule to apt-get install all the vtk-related packages.
     provides(SimpleBuild,
         () -> run(`sudo apt-get install libvtk5-qt4-dev python-vtk`),
         python_vtk)
