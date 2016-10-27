@@ -2,25 +2,12 @@ using BinDeps
 
 @BinDeps.setup
 
-function cflags_validator(pkg_name)
-    # Use pkg-config to determine if we have python-dev (with the Python headers)
-    # or just the standard libpython without those headers.
-    return (name, handle) -> begin
-        try
-            run(`pkg-config --cflags $(pkg_name)`)
-            return true
-        catch ErrorException
-            return false
-        end
-    end
-end
-
 basedir = joinpath(Pkg.dir("DrakeVisualizer"), "deps")
 director_version = v"0.1.0"
 
 @static if is_linux()
     deps = [
-        python_dev = library_dependency("python", aliases=["libpython2.7.so", "libpython3.2.so", "libpython3.3.so", "libpython3.4.so", "libpython3.5.so", "libpython3.6.so", "libpython3.7.so"], validate=cflags_validator("python"))
+        python_dev = library_dependency("python", aliases=["libpython2.7.so", "libpython3.2.so", "libpython3.3.so", "libpython3.4.so", "libpython3.5.so", "libpython3.6.so", "libpython3.7.so"])
         vtk5 = library_dependency("vtkCommon", aliases=["libvtkCommon.5.8", "libvtkCommon.5.10", "libvtkCommon.so.5.8", "libvtkCommon.so.5.10"])
 
         # This is really stupid. But I can't dlopen() the libvtkCommonPythonD
