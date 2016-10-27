@@ -69,7 +69,7 @@ function contour_mesh(f::Function,
     # and its incorrect mesh point scaling:
     # https://github.com/JuliaGeometry/GeometryTypes.jl/issues/49
     window_width = widths(bounds)
-    sdf = SignedDistanceField(x -> f(SVector{3, Float64}(x)) - isosurface_value,
+    sdf = SignedDistanceField(x -> f(SVector{3, Float64}(x[1], x[2], x[3])) - isosurface_value,
                               bounds,
                               resolution)
 
@@ -150,7 +150,7 @@ end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperRectangle, transform::Transformation)
     msg[:type] = msg[:BOX]
-    msg[:position] = convert(SVector{3, Float64}, transform(center(geometry)))
+    msg[:position] = SVector{3, Float64}(transform(center(geometry))...)
     msg[:quaternion] = to_lcm_quaternion(transform)
     msg[:string_data] = ""
     float_data = convert(Vector, widths(geometry))
@@ -161,7 +161,7 @@ end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperCube, transform::Transformation)
     msg[:type] = msg[:BOX]
-    msg[:position] = convert(SVector{3, Float64}, transform(center(geometry)))
+    msg[:position] = SVector{3, Float64}(transform(center(geometry))...)
     msg[:quaternion] = to_lcm_quaternion(transform)
     msg[:string_data] = ""
     float_data = convert(Vector, widths(geometry))
@@ -171,7 +171,7 @@ end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperSphere, transform::Transformation)
     msg[:type] = msg[:SPHERE]
-    msg[:position] = convert(SVector{3, Float64}, transform(center(geometry)))
+    msg[:position] = SVector{3, Float64}(transform(center(geometry))...)
     msg[:quaternion] = to_lcm_quaternion(transform)
     msg[:string_data] = ""
     msg[:float_data] = [radius(geometry)]
@@ -180,7 +180,7 @@ end
 
 function fill_geometry_data!(msg::PyObject, geometry::HyperEllipsoid, transform::Transformation)
     msg[:type] = msg[:ELLIPSOID]
-    msg[:position] = convert(SVector{3, Float64}, transform(center(geometry)))
+    msg[:position] = SVector{3, Float64}(transform(center(geometry))...)
     msg[:quaternion] = to_lcm_quaternion(transform)
     msg[:string_data] = ""
     msg[:float_data] = convert(Vector, radii(geometry))
@@ -267,8 +267,15 @@ function reload_model(visualizers::AbstractArray{Visualizer})
     publish(visualizers[1].lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
 end
 
-function launch()
-    (stream, proc) = open(`drake-visualizer`)
+function new_window()
+    installed_visualizer_path = joinpath(Pkg.dir("DrakeVisualizer"), "deps", "usr", "bin", "drake-visualizer")
+    if isfile(installed_visualizer_path)
+        # If we built drake-visualizer, then use it
+        (stream, proc) = open(`$installed_visualizer_path`)
+    else
+        # Otherwise let the system try to find it
+        (stream, proc) = open(`drake-visualizer`)
+    end
     proc
 end
 
