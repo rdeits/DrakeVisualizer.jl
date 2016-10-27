@@ -6,12 +6,12 @@ This package provides a Julia interface to the Drake Visualizer, part of the [Dr
 
 # Installation
 
-On Linux (with `apt-get`) and macOS, this package will attempt to download the pre-built binaries of `director` from <http://people.csail.mit.edu/patmarion/software/director/>. If this fails, you'll need to install those binaries yourself, or compile `director` from source.
+On Linux and macOS, this package will attempt to download the pre-built binaries of `director` from <http://people.csail.mit.edu/patmarion/software/director/>. If this fails, you'll need to install those binaries yourself, or compile `director` from source.
 
 On Ubuntu, the precompiled binaries of `director` require the following packages to be installed via `apt-get`:
 
-  libvtk5-qt4-dev
-  python-vtk
+    libvtk5-qt4-dev
+    python-vtk
 
 On macOS, the binaries should already include all dependencies.
 
@@ -21,7 +21,7 @@ You can launch the viewer application with
 
   julia> DrakeVisualizer.new_window()
 
-which is just a convenience wrapper around a call to the `drake-visualizer` binary, included in the `director` binaries or source installation. 
+which is just a convenience wrapper around a call to the `drake-visualizer` executable, included in the `director` binaries or source installation.
 
 # Usage:
 
