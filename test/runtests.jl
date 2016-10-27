@@ -87,9 +87,11 @@ try
     end
 
     @testset "demo_notebook" begin
-        jupyter = IJulia.jupyter
-        demo_file = "../demo.ipynb"
-        run(`$jupyter nbconvert --to notebook --execute $(demo_file) --output $(demo_file)`)
+        if VERSION < v"0.6-dev"
+            jupyter = IJulia.jupyter
+            demo_file = "../demo.ipynb"
+            run(`$jupyter nbconvert --to notebook --execute $(demo_file) --output $(demo_file)`)
+        end
     end
 finally
     kill(proc)
