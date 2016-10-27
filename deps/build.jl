@@ -7,21 +7,17 @@ director_version = v"0.1.0"
 
 @static if is_linux()
     deps = [
-        python_dev = library_dependency("python", aliases=["libpython2.7.so", "libpython3.2.so", "libpython3.3.so", "libpython3.4.so", "libpython3.5.so", "libpython3.6.so", "libpython3.7.so"])
-        vtk5 = library_dependency("vtkCommon", aliases=["libvtkCommon.5.8", "libvtkCommon.5.10", "libvtkCommon.so.5.8", "libvtkCommon.so.5.10"])
-
-        # This is really stupid. But I can't dlopen() the libvtkCommonPythonD
-        # without various undefined symbol errors, so instead we still search
-        # for libvtksys and look for the python library adjacent when
-        # validating it.
-        python_vtk = library_dependency("vtksys", aliases=["libvtksys.so", "libvtksys.so.5.8", "libvtksys.so.5.10"], depends=[vtk5, python_dev],
+        python = library_dependency("python", aliases=["libpython2.7.so", "libpython3.2.so", "libpython3.3.so", "libpython3.4.so", "libpython3.5.so", "libpython3.6.so", "libpython3.7.so"])
+        python_vtk = library_dependency("vtkCommon", aliases=["libvtkCommon.so", "libvtkCommon.so.5.8", "libvtkCommon.so.5.10"], depends=[python],
             validate=(name, handle) -> begin
-                isfile(replace(name, r"vtksys", "vtkCommonPythonD", 1))
+                isfile(replace(name, r"vtkCommon", "vtkCommonPythonD", 1))
             end)
-        director = library_dependency("ddApp", aliases=["libddApp"], depends=[vtk5, python_vtk, python_dev])
+        director = library_dependency("ddApp", aliases=["libddApp"], depends=[python_vtk, python])
     ]
-
-    provides(AptGet, Dict("libvtk5-qt4-dev" => vtk5, "python-dev" => python_dev, "python-vtk" => python_vtk))
+    provides(SimpleBuild,
+        () -> run(`sudo apt-get install libvtk5-qt4 python-vtk`),
+        python_vtk)
+    provides(AptGet, Dict("python2.7" => python))
     provides(BuildProcess, (@build_steps begin
         FileDownloader("http://people.csail.mit.edu/patmarion/software/director/releases/director-$(director_version)-linux.tar.gz",
                        joinpath(basedir, "downloads", "director.tar.gz"))
