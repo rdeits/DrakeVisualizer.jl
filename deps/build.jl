@@ -12,11 +12,11 @@ director_version = v"0.1.0"
 
         # This is really stupid. But I can't dlopen() the libvtkCommonPythonD
         # without various undefined symbol errors, so instead we still search
-        # for libvtkCommon and look for the python library adjacent when
+        # for libvtksys and look for the python library adjacent when
         # validating it.
-        python_vtk = library_dependency("vtkCommon", aliases=["libvtkCommon.so", "libvtkCommon.so.5.8", "libvtkCommon.so.5.10"], depends=[vtk5, python_dev],
+        python_vtk = library_dependency("vtksys", aliases=["libvtksys.so", "libvtksys.so.5.8", "libvtksys.so.5.10"], depends=[vtk5, python_dev],
             validate=(name, handle) -> begin
-                isfile(replace(name, r"vtkCommon", "vtkCommonPythonD", 1))
+                isfile(replace(name, r"vtksys", "vtkCommonPythonD", 1))
             end)
         director = library_dependency("ddApp", aliases=["libddApp"], depends=[vtk5, python_vtk, python_dev])
     ]
