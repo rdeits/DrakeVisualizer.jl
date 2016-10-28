@@ -148,6 +148,10 @@ function fill_geometry_data!(msg::PyObject, geometry::AbstractMesh, transform::T
     msg[:num_float_data] = length(float_data)
 end
 
+function fill_geometry_data!(msg::PyObject, geometry::GeometryPrimitive, transform::Transformation)
+    fill_geometry_data!(msg, GLNormalMesh(geometry), transform)
+end
+
 function fill_geometry_data!(msg::PyObject, geometry::HyperRectangle, transform::Transformation)
     msg[:type] = msg[:BOX]
     msg[:position] = SVector{3, Float64}(transform(center(geometry))...)
