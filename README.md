@@ -1,6 +1,6 @@
 # DrakeVisualizer
 
-[![Build Status](https://travis-ci.org/rdeits/DrakeVisualizer.jl.svg?branch=prebuilt)](https://travis-ci.org/rdeits/DrakeVisualizer.jl)
+[![Build Status](https://travis-ci.org/rdeits/DrakeVisualizer.jl.svg?branch=master)](https://travis-ci.org/rdeits/DrakeVisualizer.jl)
 
 This package provides a Julia interface to the Drake Visualizer, part of the [Drake](http://drake.mit.edu) project and built on top of [Director](https://github.com/RobotLocomotion/director), a highly customizable 3D interface for robotics visualization and interaction.
 
