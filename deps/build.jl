@@ -15,6 +15,15 @@ director_version = v"0.1.0"
         director = library_dependency("ddApp", aliases=["libddApp"], depends=[python_vtk, python])
     ]
 
+    linux_distributor = strip(readstring(`lsb_release -i -s`))
+    linux_version = VersionNumber(strip(readstring(`lsb_release -r -s`)))
+    if linux_distributor == "Ubuntu" && linux_version >= v"16.04"
+        director_variant = "ubuntu16"
+    else
+        director_variant = "linux"
+    end
+
+
     # The vtkPython libraries all have undeclared dependencies on libpython2.7,
     # so they cannot be dlopen()ed without missing symbol errors. As a result,
     # we can't use the regular library_dependency mechanism to look for vtk5
@@ -25,7 +34,7 @@ director_version = v"0.1.0"
         python_vtk)
     provides(AptGet, Dict("python2.7" => python))
     provides(BuildProcess, (@build_steps begin
-        FileDownloader("http://people.csail.mit.edu/patmarion/software/director/releases/director-$(director_version)-linux.tar.gz",
+        FileDownloader("http://people.csail.mit.edu/patmarion/software/director/releases/director-$(director_version)-$(director_variant).tar.gz",
                        joinpath(basedir, "downloads", "director.tar.gz"))
         CreateDirectory(joinpath(basedir, "usr"))
         (`tar xzf $(joinpath(basedir, "downloads", "director.tar.gz")) --directory=usr --strip-components=1`)
