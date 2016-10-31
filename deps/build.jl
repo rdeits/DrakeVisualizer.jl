@@ -2,7 +2,7 @@ using BinDeps
 
 @BinDeps.setup
 
-basedir = joinpath(Pkg.dir("DrakeVisualizer"), "deps")
+basedir = dirname(@__FILE__)
 director_version = v"0.1.0"
 
 @static if is_linux()
