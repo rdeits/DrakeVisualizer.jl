@@ -272,7 +272,7 @@ function reload_model(visualizers::AbstractArray{Visualizer})
 end
 
 function new_window()
-    installed_visualizer_path = joinpath(Pkg.dir("DrakeVisualizer"), "deps", "usr", "bin", "drake-visualizer")
+    installed_visualizer_path = joinpath(dirname(@__FILE__), "..", "deps", "usr", "bin", "drake-visualizer")
     if isfile(installed_visualizer_path)
         # If we built drake-visualizer, then use it
         (stream, proc) = open(`$installed_visualizer_path`)
@@ -299,7 +299,7 @@ function draw{T <: Transformation}(model::Visualizer, link_origins::Vector{T})
 end
 
 function __init__()
-    lcmtypes_path = abspath(joinpath(Pkg.dir("DrakeVisualizer"), "src", "lcmtypes"))
+    lcmtypes_path = abspath(joinpath(dirname(@__FILE__), "lcmtypes"))
     println("adding: $(lcmtypes_path) to the python path")
     unshift!(PyVector(pyimport("sys")["path"]), lcmtypes_path)
     copy!(drakevis, pyimport("drakevis"))
