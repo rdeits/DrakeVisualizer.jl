@@ -8,10 +8,14 @@ import GeometryTypes: origin, radius
 import Meshing
 import PyCall: pyimport, PyObject, PyNULL, PyVector
 import Rotations: Rotation, Quat
-import CoordinateTransformations: Transformation, transform_deriv, IdentityTransformation, AbstractAffineMap
+import CoordinateTransformations: Transformation,
+                                  transform_deriv,
+                                  IdentityTransformation,
+                                  AbstractAffineMap
 import ColorTypes: RGBA, Colorant, red, green, blue, alpha
 import StaticArrays: SVector
 import Base: convert, length
+import DataStructures: OrderedDict
 
 export GeometryData,
         Link,
@@ -105,20 +109,14 @@ contour_mesh(f::Function,
                  isosurface_value,
                  resolution))
 
-type Link
-    geometry_data::Vector{GeometryData}
-    name::String
-end
-Link{T <: GeometryData}(geometry_data::Vector{T}) = Link(geometry_data, "link")
-
-type Robot
-    links::Vector{Link}
-end
+typealias Link Vector{GeometryData}
+typealias Robot{KeyType} OrderedDict{KeyType, Link}
 
 convert(::Type{Link}, geom::GeometryData) = Link([geom])
 convert(::Type{Link}, geometry::AbstractGeometry) = Link(GeometryData(geometry))
-convert(::Type{Robot}, link::Link) = Robot([link])
-convert(::Type{Robot}, links::AbstractArray{Link}) = Robot(convert(Vector{Link}, links))
+convert(::Type{Robot}, link::Link) = OrderedDict(1 => link)
+convert{K}(::Type{Robot}, links::Associative{K}) = convert(OrderedDict{K, Link}, links)
+convert(::Type{Robot}, links::AbstractArray{Link}) = OrderedDict{Int, Link}(zip(1:length(links), links))
 convert(::Type{Robot}, geom::GeometryData) = convert(Robot, convert(Link, geom))
 convert(::Type{Robot}, geometry::AbstractGeometry) = convert(Robot, GeometryData(geometry))
 
@@ -208,12 +206,12 @@ function to_lcm{T, GeomType}(geometry_data::GeometryData{T, GeomType})
     msg
 end
 
-function to_lcm(link::Link, robot_id_number::Real)
+function to_lcm(link::Link, name::String, robot_id_number::Real)
     msg = drakevis[:lcmt_viewer_link_data]()
-    msg[:name] = link.name
+    msg[:name] = name
     msg[:robot_num] = robot_id_number
-    msg[:num_geom] = length(link.geometry_data)
-    for geometry_data in link.geometry_data
+    msg[:num_geom] = length(link)
+    for geometry_data in link
         push!(msg["geom"], to_lcm(geometry_data))
     end
     msg
@@ -222,50 +220,53 @@ end
 function to_lcm(robot::Robot, robot_id_number::Real)
     msg = drakevis[:lcmt_viewer_load_robot]()
     msg[:num_links] = length(robot.links)
-    for link in robot.links
-        push!(msg["link"], to_lcm(link, robot_id_number))
+    for (key, link) in robot.links
+        push!(msg["link"], to_lcm(link, string(key), robot_id_number))
     end
     msg
 end
 
-type Visualizer
-    robot::Robot
+type Visualizer{KeyType}
+    links::Robot{KeyType}
     robot_id_number::Int
     lcm::LCM
 
-    function Visualizer(robot::Robot, robot_id_number::Integer=1, lcm::LCM=LCM(); load_now::Bool=true)
-        vis = new(robot, robot_id_number, lcm)
+    function Visualizer(links::Robot{KeyType},
+                        robot_id_number::Integer=1,
+                        lcm::LCM=LCM();
+                        load_now::Bool=true)
+        vis = new(links, robot_id_number, lcm)
         if load_now
             reload_model(vis)
         end
         vis
     end
-
 end
 
-Visualizer(data, robot_id_number::Integer=1, lcm::LCM=LCM()) = Visualizer(convert(Robot, data), robot_id_number, lcm)
+Visualizer{KeyType}(links::Robot{KeyType}, robot_id_number::Integer, lcm::LCM) =
+    Visualizer{KeyType}(links, robot_id_number, lcm)
 
-function Visualizer(robots::Vector{Robot}, lcm::LCM=LCM())
-    visualizers = Vector{Visualizer}()
-    for (i, robot) in enumerate(robots)
-        push!(visualizers, Visualizer(robot, i, lcm; load_now=false))
-    end
+Visualizer(data, robot_id_number::Integer=1, lcm::LCM=LCM()) =
+    Visualizer(convert(Robot, data), robot_id_number, lcm)
+
+function Visualizer{KeyType}(robots::AbstractVector{Robot{KeyType}}, lcm::LCM=LCM())
+    visualizers = [Visualizer{KeyType}(robot, i, lcm; load_now=false)
+                   for (i, robot) in enumerate(robots)]
     reload_model(visualizers)
     visualizers
 end
 
 function reload_model(vis::Visualizer)
-    msg = to_lcm(vis.robot, vis.robot_id_number)
-    publish(vis.lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
+    reload_model(SVector(vis))
 end
 
-function reload_model(visualizers::AbstractArray{Visualizer})
+function reload_model{V <: Visualizer}(visualizers::AbstractArray{V})
     msg = drakevis[:lcmt_viewer_load_robot]()
     msg[:num_links] = 0
     for vis in visualizers
-        msg[:num_links] = msg[:num_links] + length(vis.robot.links)
-        for link in vis.robot.links
-            push!(msg["link"], to_lcm(link, vis.robot_id_number))
+        msg[:num_links] = msg[:num_links] + length(vis.links)
+        for (key, link) in vis.links
+            push!(msg["link"], to_lcm(link, string(key), vis.robot_id_number))
         end
     end
     publish(visualizers[1].lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
@@ -283,19 +284,23 @@ function new_window()
     proc
 end
 
-function draw{T <: Transformation}(model::Visualizer, link_origins::Vector{T})
+function draw(vis::Visualizer, link_transforms::AbstractVector)
+    @assert length(link_transforms) == length(vis.links)
+    draw(vis, Dict(zip(keys(vis.links), link_transforms)))
+end
+
+function draw(vis::Visualizer, link_transforms::Associative)
     msg = drakevis[:lcmt_viewer_draw]()
     msg[:timestamp] = convert(Int64, time_ns())
-    msg[:num_links] = length(link_origins)
-    for (i, origin) in enumerate(link_origins)
-        push!(msg["link_name"], model.robot.links[i].name)
-        push!(msg["robot_num"], model.robot_id_number)
+    msg[:num_links] = length(link_transforms)
+    for (key, origin) in link_transforms
+        @assert key in keys(vis.links)
+        push!(msg["link_name"], string(key))
+        push!(msg["robot_num"], vis.robot_id_number)
         push!(msg["position"], convert(SVector{3, Float64}, origin(SVector{3, Float64}(0,0,0))))
-        # push!(msg["position"], origin.offset)
         push!(msg["quaternion"], to_lcm_quaternion(origin))
-        # push!(msg["quaternion"], to_lcm(qrotation(rotationparameters(origin.scalefwd))))
     end
-    publish(model.lcm, "DRAKE_VIEWER_DRAW", msg)
+    publish(vis.lcm, "DRAKE_VIEWER_DRAW", msg)
 end
 
 function __init__()

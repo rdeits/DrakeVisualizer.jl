@@ -8,3 +8,4 @@ Meshing 0.0.3
 Rotations 0.2.0
 CoordinateTransformations 0.2.0
 StaticArrays 0.0.4
+DataStructures 0.4
