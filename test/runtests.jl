@@ -13,8 +13,7 @@ try
         f = x -> norm(x)^2
         bounds = HyperRectangle(Vec(0.,0,0), Vec(1.,1,1))
         geom = contour_mesh(f, minimum(bounds), maximum(bounds))
-        robot = convert(Robot, geom)
-        vis = Visualizer(robot, 1)
+        vis = Visualizer(geom, 1)
     end
 
     @testset "link_list_load" begin
@@ -42,7 +41,7 @@ try
         for (i, l) in enumerate(link_lengths)
             geometry = HyperRectangle(Vec(0., -0.1, -0.1), Vec(l, 0.2, 0.2))
             geometry_data = GeometryData(geometry)
-            push!(links, Link([geometry_data], "link$(i)"))
+            push!(links, Link([geometry_data]))
         end
 
 
@@ -58,8 +57,7 @@ try
             transforms
         end
 
-        robot = Robot(links)
-        model = Visualizer(robot)
+        model = Visualizer(links)
 
         for x in product([linspace(-pi, pi, 11) for i in 1:length(link_lengths)]...)
             origins = link_origins(reverse(x))
@@ -84,6 +82,14 @@ try
         for vis in [vis1, vis2]
             draw(vis, [IdentityTransformation()])
         end
+    end
+
+    @testset "link dictionaries" begin
+        links = Dict("cylinder" => Link(HyperCylinder{3, Float64}(1.0, 0.5)),
+                     "rectangle" => HyperRectangle(Vec(0., -0.1, -0.1), Vec(1, 0.2, 0.2)))
+        vis = Visualizer(links)
+        draw(vis, Dict("cylinder" => IdentityTransformation()))
+        draw(vis, Dict("rectangle" => Translation(1., 2, -1)))
     end
 
     @testset "demo_notebook" begin
