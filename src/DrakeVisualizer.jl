@@ -131,7 +131,7 @@ function draw(vis::Visualizer, link_transforms::Associative)
     msg[:num_links] = length(link_transforms)
     for (key, origin) in link_transforms
         @assert key in keys(vis.links)
-        push!(msg["link_name"], string(key))
+        push!(msg["link_name"], to_link_name(key))
         push!(msg["robot_num"], vis.robot_id_number)
         push!(msg["position"], convert(SVector{3, Float64}, origin(SVector{3, Float64}(0,0,0))))
         push!(msg["quaternion"], to_lcm_quaternion(origin))
