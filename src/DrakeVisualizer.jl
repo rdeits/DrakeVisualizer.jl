@@ -94,13 +94,15 @@ function reload_model(vis::Visualizer)
     reload_model(SVector(vis))
 end
 
+to_link_name(key) = string(key)
+
 function reload_model{V <: Visualizer}(visualizers::AbstractArray{V})
     msg = drakevis[:lcmt_viewer_load_robot]()
     msg[:num_links] = 0
     for vis in visualizers
         msg[:num_links] = msg[:num_links] + length(vis.links)
         for (key, link) in vis.links
-            push!(msg["link"], to_lcm(link, string(key), vis.robot_id_number))
+            push!(msg["link"], to_lcm(link, to_link_name(key), vis.robot_id_number))
         end
     end
     publish(visualizers[1].lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
