@@ -94,13 +94,15 @@ function reload_model(vis::Visualizer)
     reload_model(SVector(vis))
 end
 
+to_link_name(key) = string(key)
+
 function reload_model{V <: Visualizer}(visualizers::AbstractArray{V})
     msg = drakevis[:lcmt_viewer_load_robot]()
     msg[:num_links] = 0
     for vis in visualizers
         msg[:num_links] = msg[:num_links] + length(vis.links)
         for (key, link) in vis.links
-            push!(msg["link"], to_lcm(link, string(key), vis.robot_id_number))
+            push!(msg["link"], to_lcm(link, to_link_name(key), vis.robot_id_number))
         end
     end
     publish(visualizers[1].lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
@@ -129,7 +131,7 @@ function draw(vis::Visualizer, link_transforms::Associative)
     msg[:num_links] = length(link_transforms)
     for (key, origin) in link_transforms
         @assert key in keys(vis.links)
-        push!(msg["link_name"], string(key))
+        push!(msg["link_name"], to_link_name(key))
         push!(msg["robot_num"], vis.robot_id_number)
         push!(msg["position"], convert(SVector{3, Float64}, origin(SVector{3, Float64}(0,0,0))))
         push!(msg["quaternion"], to_lcm_quaternion(origin))

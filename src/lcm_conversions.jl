@@ -90,11 +90,4 @@ function to_lcm(link::Link, name::String, robot_id_number::Real)
     msg
 end
 
-function to_lcm(robot::Robot, robot_id_number::Real)
-    msg = drakevis[:lcmt_viewer_load_robot]()
-    msg[:num_links] = length(robot.links)
-    for (key, link) in robot.links
-        push!(msg["link"], to_lcm(link, string(key), robot_id_number))
-    end
-    msg
-end
+to_link_name(key) = string(key)
