@@ -75,17 +75,17 @@ try
         Visualizer(cylinder)
     end
 
-    @testset "destroy" begin
-        vis = Visualizer(HyperCylinder{3, Float64}(1.0, 2.0))
-        destroy!(vis)
-    end
-
     @testset "link dictionaries" begin
         links = Dict("cylinder" => Link(HyperCylinder{3, Float64}(1.0, 0.5)),
                      "rectangle" => HyperRectangle(Vec(0., -0.1, -0.1), Vec(1, 0.2, 0.2)))
         vis = Visualizer(links)
         draw(vis, Dict("cylinder" => IdentityTransformation()))
         draw(vis, Dict("rectangle" => Translation(1., 2, -1)))
+    end
+
+    @testset "destroy" begin
+        vis = Visualizer(HyperCylinder{3, Float64}(1.0, 2.0))
+        clear()
     end
 
     @testset "demo_notebook" begin

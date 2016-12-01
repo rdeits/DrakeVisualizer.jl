@@ -29,8 +29,7 @@ export GeometryData,
         contour_mesh,
         draw,
         reload!,
-        destroy!,
-        destroyall
+        clear
 
 const drakevis = PyNULL()
 
@@ -97,13 +96,10 @@ function reload!(vis::Visualizer)
     publish(vis.lcm, "DRAKE_VIEWER_ADD_ROBOT", msg)
 end
 
-destroy!(vis::Visualizer) = remove_robot(vis.robot_id_number, vis.lcm)
-destroyall(lcm::LCM=LCM()) = remove_robot(-1, lcm)
-
-function remove_robot(robot_id::Integer, lcm::LCM)
-    msg = drakevis[:lcmt_utime]()
-    msg[:utime] = robot_id
-    publish(lcm, "DRAKE_VIEWER_REMOVE_ROBOT", msg)
+function clear(lcm::LCM=LCM())
+    msg = drakevis[:lcmt_viewer_load_robot]()
+    msg[:num_links] = 0
+    publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
 end
 
 function new_window()
