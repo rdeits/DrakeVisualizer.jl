@@ -75,13 +75,9 @@ try
         Visualizer(cylinder)
     end
 
-    @testset "multiple_robots" begin
-        robot1 = convert(Robot, DrakeVisualizer.HyperCylinder{3, Float64}(1.0, 0.5))
-        robot2 = convert(Robot, DrakeVisualizer.HyperRectangle(Vec(0., -0.1, -0.1), Vec(1, 0.2, 0.2)))
-        vis1, vis2 = Visualizer([robot1, robot2])
-        for vis in [vis1, vis2]
-            draw(vis, [IdentityTransformation()])
-        end
+    @testset "destroy" begin
+        vis = Visualizer(HyperCylinder{3, Float64}(1.0, 2.0))
+        destroy!(vis)
     end
 
     @testset "link dictionaries" begin
