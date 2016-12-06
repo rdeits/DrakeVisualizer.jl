@@ -14,7 +14,7 @@ import CoordinateTransformations: Transformation,
                                   AbstractAffineMap
 import ColorTypes: RGBA, Colorant, red, green, blue, alpha
 import StaticArrays: SVector
-import Base: convert, length
+import Base: convert, length, show
 import DataStructures: OrderedDict
 
 export GeometryData,
@@ -28,7 +28,8 @@ export GeometryData,
         HyperCube,
         contour_mesh,
         draw,
-        reload_model
+        reload!,
+        clear
 
 const drakevis = PyNULL()
 
@@ -45,7 +46,7 @@ GeometryData{TransformType <: Transformation, GeometryType <: AbstractGeometry}(
     color=RGBA{Float64}(1., 0, 0, 0.5)) = GeometryData{TransformType, GeometryType}(geometry, transform, convert(RGBA{Float64}, color))
 
 typealias Link Vector{GeometryData}
-typealias Robot{KeyType} OrderedDict{KeyType, Link}
+typealias LinkDict{KeyType} OrderedDict{KeyType, Link}
 
 include("contour_meshes.jl")
 include("geometry_types.jl")
@@ -53,59 +54,52 @@ include("lcm_conversions.jl")
 
 convert(::Type{Link}, geom::GeometryData) = Link([geom])
 convert(::Type{Link}, geometry::AbstractGeometry) = Link(GeometryData(geometry))
-convert(::Type{Robot}, link::Link) = OrderedDict(1 => link)
-convert{K}(::Type{Robot}, links::Associative{K}) = convert(OrderedDict{K, Link}, links)
-convert(::Type{Robot}, links::AbstractArray{Link}) = OrderedDict{Int, Link}(zip(1:length(links), links))
-convert(::Type{Robot}, geom::GeometryData) = convert(Robot, convert(Link, geom))
-convert(::Type{Robot}, geometry::AbstractGeometry) = convert(Robot, GeometryData(geometry))
+convert{D <: LinkDict}(::Type{D}, link::Link) = OrderedDict(1 => link)
+convert{K}(::Type{LinkDict}, links::Associative{K}) = convert(OrderedDict{K, Link}, links)
+convert{D <: LinkDict}(::Type{D}, links::AbstractArray{Link}) = OrderedDict{Int, Link}(zip(1:length(links), links))
+convert{D <: LinkDict}(::Type{D}, geom::GeometryData) = convert(LinkDict, convert(Link, geom))
+convert{D <: LinkDict}(::Type{D}, geometry::AbstractGeometry) = convert(LinkDict, GeometryData(geometry))
 
 
 type Visualizer{KeyType}
-    links::Robot{KeyType}
+    links::LinkDict{KeyType}
     robot_id_number::Int
     lcm::LCM
 
-    function Visualizer(links::Robot{KeyType},
+    function Visualizer(links::LinkDict{KeyType},
                         robot_id_number::Integer=1,
                         lcm::LCM=LCM();
                         load_now::Bool=true)
         vis = new(links, robot_id_number, lcm)
         if load_now
-            reload_model(vis)
+            reload!(vis)
         end
         vis
     end
 end
 
-Visualizer{KeyType}(links::Robot{KeyType}, robot_id_number::Integer, lcm::LCM) =
+Visualizer{KeyType}(links::LinkDict{KeyType}, robot_id_number::Integer, lcm::LCM) =
     Visualizer{KeyType}(links, robot_id_number, lcm)
 
 Visualizer(data, robot_id_number::Integer=1, lcm::LCM=LCM()) =
-    Visualizer(convert(Robot, data), robot_id_number, lcm)
+    Visualizer(convert(LinkDict, data), robot_id_number, lcm)
 
-function Visualizer{KeyType}(robots::AbstractVector{Robot{KeyType}}, lcm::LCM=LCM())
-    visualizers = [Visualizer{KeyType}(robot, i, lcm; load_now=false)
-                   for (i, robot) in enumerate(robots)]
-    reload_model(visualizers)
-    visualizers
+show(io::IO, vis::Visualizer) =
+    print(io, "Visualizer with robot_id_number: $(vis.robot_id_number)")
+
+function reload!(vis::Visualizer)
+    msg = drakevis[:lcmt_viewer_load_robot]()
+    msg[:num_links] = length(vis.links)
+    for (key, link) in vis.links
+        push!(msg["link"], to_lcm(link, to_link_name(key), vis.robot_id_number))
+    end
+    publish(vis.lcm, "DRAKE_VIEWER_ADD_ROBOT", msg)
 end
 
-function reload_model(vis::Visualizer)
-    reload_model(SVector(vis))
-end
-
-to_link_name(key) = string(key)
-
-function reload_model{V <: Visualizer}(visualizers::AbstractArray{V})
+function clear(lcm::LCM=LCM())
     msg = drakevis[:lcmt_viewer_load_robot]()
     msg[:num_links] = 0
-    for vis in visualizers
-        msg[:num_links] = msg[:num_links] + length(vis.links)
-        for (key, link) in vis.links
-            push!(msg["link"], to_lcm(link, to_link_name(key), vis.robot_id_number))
-        end
-    end
-    publish(visualizers[1].lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
+    publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", msg)
 end
 
 function new_window()
