@@ -32,6 +32,7 @@ export GeometryData,
         clear
 
 const drakevis = PyNULL()
+const drake_visualizer_executable_name = "drake-visualizer"
 
 destructure{T,N}(A::Array{T,N}) = reinterpret(eltype(T), A, (size(T)..., size(A)...))
 
@@ -103,16 +104,18 @@ function clear(lcm::LCM=LCM())
 end
 
 function new_window()
-    installed_visualizer_path = joinpath(dirname(@__FILE__), "..", "deps", "usr", "bin", "drake-visualizer")
+    installed_visualizer_path = joinpath(dirname(@__FILE__), "..", "deps", "usr", "bin", "$drake_visualizer_executable_name")
     if isfile(installed_visualizer_path)
         # If we built drake-visualizer, then use it
         (stream, proc) = open(`$installed_visualizer_path`)
     else
         # Otherwise let the system try to find it
-        (stream, proc) = open(`drake-visualizer`)
+        (stream, proc) = open(`$drake_visualizer_executable_name`)
     end
     proc
 end
+
+any_open_windows() = success(spawn(`pgrep $drake_visualizer_executable_name`))
 
 function draw(vis::Visualizer, link_transforms::AbstractVector)
     @assert length(link_transforms) == length(vis.links)
