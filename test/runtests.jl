@@ -9,6 +9,12 @@ import Iterators: product
 proc = DrakeVisualizer.new_window()
 
 try
+    @testset "open window" begin
+        if is_apple() || is_linux()
+            @test DrakeVisualizer.any_open_windows()
+        end
+    end
+
     @testset "robot_load" begin
         f = x -> norm(x)^2
         bounds = HyperRectangle(Vec(0.,0,0), Vec(1.,1,1))
