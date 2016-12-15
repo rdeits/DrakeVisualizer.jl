@@ -116,12 +116,13 @@ function new_window()
 end
 
 function any_open_windows()
-    if is_apple()
+    @static if is_apple()
         return success(spawn(`pgrep $drake_visualizer_executable_name`))
     elseif is_linux()
         return success(spawn(`pgrep -f $drake_visualizer_executable_name`))
     else
-        return false # TODO
+        warn("DrakeVisualizer.any_open_windows not implemented for $(Sys.KERNEL). This function will always return false.")
+        return false
     end
 end
 
