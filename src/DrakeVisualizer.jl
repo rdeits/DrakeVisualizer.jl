@@ -115,7 +115,16 @@ function new_window()
     proc
 end
 
-any_open_windows() = success(spawn(`pgrep $drake_visualizer_executable_name`))
+function any_open_windows()
+    @static if is_apple()
+        return success(spawn(`pgrep $drake_visualizer_executable_name`))
+    elseif is_linux()
+        return success(spawn(`pgrep -f $drake_visualizer_executable_name`))
+    else
+        warn("DrakeVisualizer.any_open_windows not implemented for $(Sys.KERNEL). This function will always return false.")
+        return false
+    end
+end
 
 function draw(vis::Visualizer, link_transforms::AbstractVector)
     @assert length(link_transforms) == length(vis.links)
