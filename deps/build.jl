@@ -18,9 +18,11 @@ director_version = v"0.1.0"
     linux_distributor = strip(readstring(`lsb_release -i -s`))
     linux_version = VersionNumber(strip(readstring(`lsb_release -r -s`)))
     if linux_distributor == "Ubuntu" && linux_version >= v"16.04"
-        director_variant = "ubuntu16"
+        director_variant = "ubuntu-16.04"
+    elseif linux_distributor == "Ubuntu" && linux_version >= v"14.04"
+        director_variant = "ubuntu-14.04"
     else
-        director_variant = "linux"
+        error("Prebuilt binaries are only available for Ubuntu 14.04 and 16.04")
     end
 
 
