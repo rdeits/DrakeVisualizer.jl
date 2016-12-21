@@ -16,6 +16,13 @@ On Ubuntu, the precompiled binaries of `director` require the following packages
 
 On macOS, the binaries should already include all dependencies.
 
+## Linux: Configuring Large UDP Packets
+
+`DrakeVisualizer` uses [LCM](http://lcm-proj.github.io/) for communication, and LCM uses UDP under the hood. Very large LCM messages (like those created when loading a robot with lots of mesh geometries) can result in UDP packets being dropped, which will result in you not seeing anything in the visualizer. If that happens to you, you'll need to follow the instructions in [this comment](https://github.com/rdeits/DrakeVisualizer.jl/issues/19#issuecomment-267429751). Edit `/etc/sysctl.conf` and add:
+
+    net.core.rmem_max=2097152
+    net.core.rmem_default=2097152
+
 # Launching the Viewer
 
 You can launch the viewer application with
