@@ -50,7 +50,7 @@ function queue_load!(vis::Visualizer, path::AbstractString)
     push!(vis.queue.load, path)
 end
 
-function queue_load!(vis::Visualizer, path::AbstractString, link::Link)
+function queue_load!(vis::Visualizer, path::AbstractString, link)
     vis.links[path] = link
     push!(vis.queue.load, path)
 end
@@ -78,21 +78,27 @@ end
 
 isempty(queue::CommandQueue) = isempty(queue.delete) && isempty(queue.load) && isempty(queue.draw)
 
+publish_order(vis::Visualizer) = ((Delete(), vis.queue.delete),
+                                  (Draw(), vis.queue.draw),
+                                  (Load(), vis.queue.load),
+                                  (Draw(), vis.queue.draw))
+
 function publish!(vis::Visualizer)
-    for i in 1:5
-        publish!(vis, Delete(), vis.queue.delete)
-        publish!(vis, Load(), vis.queue.load)
-        publish!(vis, Draw(), vis.queue.draw)
+    for (cmd, queue) in publish_order(vis)
+        publish!(vis, cmd, queue)
+    end
+end
+
+function publish!(vis::Visualizer, cmd::Command, queue)
+    if !isempty(queue)
+        data = serialize(vis, cmd, queue)
+        msg = to_lcm(data)
+        publish(vis.lcm, "DRAKE_VIEWER2_REQUEST", msg)
         PyCall.pycall(vis.lcm.lcm_obj[:handle_timeout], PyCall.PyObject, 100)
-        @show vis.queue
-        if isempty(vis.queue)
-            break
-        end
     end
 end
 
 function onresponse(vis::Visualizer, msgdata)
-    @show msgdata
     data = msgdata["data"]
     empty = []
     for path in get(data, "missing_paths", empty)
@@ -102,7 +108,6 @@ function onresponse(vis::Visualizer, msgdata)
         delete!(vis.queue.draw, join(path, '/'))
     end
     for path in get(data, "loaded_paths", empty)
-        println("deleting load for path: ", path)
         delete!(vis.queue.load, join(path, '/'))
     end
     for path in get(data, "deleted_paths", empty)
@@ -117,18 +122,9 @@ function to_lcm(data::Associative)
     msg[:format_version_major] = 1
     msg[:format_version_minor] = 0
     encoded = JSON.json(data)
-    @show encoded
     msg[:num_bytes] = length(encoded)
     msg[:data] = encoded
     msg
-end
-
-function publish!(vis::Visualizer, cmd::Command, queue)
-    if !isempty(queue)
-        data = serialize(vis, cmd, queue)
-        msg = to_lcm(data)
-        publish(vis.lcm, "DRAKE_VIEWER2_REQUEST", msg)
-    end
 end
 
 function serialize(vis::Visualizer, cmd::Command, queue)
@@ -159,13 +155,14 @@ end
 
 function serialize(name::AbstractString, geomdata::GeometryData)
     params = serialize(geomdata.geometry)
+    params["color"] = serialize(geomdata.color)
     intrinsic_tform = intrinsic_transform(geomdata.geometry)
     Dict("name" => name,
-         "color" => serialize(geomdata.color),
          "pose" => serialize(compose(geomdata.transform, intrinsic_tform)),
          "parameters" => params)
 end
 
+intrinsic_transform(geom::AbstractMesh) = IdentityTransformation()
 intrinsic_transform(geom::AbstractGeometry) = Translation(center(geom)...)
 
 serialize(v::Vec) = convert(Vector, v)
@@ -178,7 +175,17 @@ serialize(g::HyperCylinder{3}) = Dict("type" => "cylinder",
                                       "length" => length(g),
                                       "radius" => radius(g))
 serialize(g::HyperCube) = Dict("type" => "box", "lengths" => widths(g))
+serialize(g::GeometryPrimitive) = serialize(GLNormalMesh(g))
 
+function serialize(g::AbstractMesh)
+    Dict("type" => "mesh_data",
+         "vertices" => serialize.(vertices(g)),
+         "faces" => serialize.(faces(g)))
+end
+
+function serialize{N, T, Offset}(face::Face{N, T, Offset})
+    convert(Vector, convert(Face{N, T, -1}, face))
+end
 
 function command_data(vis::Visualizer, cmd::Draw, queue)
     commands = [serialize(p, vis.transforms[p]) for p in queue]
