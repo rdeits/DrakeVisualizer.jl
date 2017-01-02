@@ -1,9 +1,15 @@
 import Base: isempty
 
-type GeometryData{GeometryType <: AbstractGeometry, TransformType <: Transformation}
-    geometry::GeometryType
-    transform::TransformType
-    color::RGBA{Float64}
+type GeometryData{G <: AbstractGeometry, T <: Transformation, C <: Colorant}
+    geometry::G
+    transform::T
+    color::C
+end
+
+type PointCloud{Point, Color} <: AbstractGeometry
+    points::Vector{Point}
+    colors::Nullable{Vector{Color}}
+    intensities::Nullable{Vector{Float64}}
 end
 
 typealias Link Dict{String, GeometryData}
@@ -55,7 +61,7 @@ function queue_load!(vis::Visualizer, path::AbstractString, link)
     push!(vis.queue.load, path)
 end
 
-function load!(vis::Visualizer, path::AbstractString, link::Link)
+function load!(vis::Visualizer, path::AbstractString, link)
     queue_load!(vis, path, link)
     publish!(vis)
 end
@@ -145,7 +151,10 @@ function command_data(vis::Visualizer, cmd::Load, queue)
     Dict("links" => links)
 end
 
-serialize(color::RGBA) = [color.r, color.g, color.b, color.alpha]
+serialize(color::Colorant) = (red(color),
+                              green(color),
+                              blue(color),
+                              alpha(color))
 
 function serialize(path::String, link::Link)
     geometries = [serialize(name, geom) for (name, geom) in link]
@@ -164,9 +173,14 @@ end
 
 intrinsic_transform(geom::AbstractMesh) = IdentityTransformation()
 intrinsic_transform(geom::AbstractGeometry) = Translation(center(geom)...)
+intrinsic_transform(geom::PointCloud) = IdentityTransformation()
 
+serialize(v::Vector) = v
 serialize(v::Vec) = convert(Vector, v)
 serialize(v::Point) = convert(Vector, v)
+serialize{N, T, Offset}(face::Face{N, T, Offset}) =
+    convert(Vector, convert(Face{N, T, -1}, face))
+
 
 serialize(g::HyperRectangle) = Dict("type" => "box", "lengths" => serialize(widths(g)))
 serialize(g::HyperSphere) = Dict("type" => "sphere", "radius" => radius(g))
@@ -183,8 +197,17 @@ function serialize(g::AbstractMesh)
          "faces" => serialize.(faces(g)))
 end
 
-function serialize{N, T, Offset}(face::Face{N, T, Offset})
-    convert(Vector, convert(Face{N, T, -1}, face))
+function serialize(g::PointCloud)
+    params = Dict("type" => "pointcloud",
+                  "points" => serialize.(g.points),
+                  "channels" => Dict{String, Any}())
+    if !isnull(g.colors)
+        params["channels"]["rgb"] = serialize.(get(g.colors))
+    end
+    if !isnull(g.intensities)
+        params["channels"]["intensity"] = serialize.(get(g.intensities))
+    end
+    params
 end
 
 function command_data(vis::Visualizer, cmd::Draw, queue)

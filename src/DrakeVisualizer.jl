@@ -14,7 +14,7 @@ import CoordinateTransformations: Transformation,
                                   AbstractAffineMap,
                                   Translation,
                                   compose
-import ColorTypes: RGBA, Colorant, red, green, blue, alpha
+import ColorTypes: RGB, RGBA, Colorant, red, green, blue, alpha
 import StaticArrays: SVector
 import Base: convert, length, show
 import DataStructures: OrderedDict
