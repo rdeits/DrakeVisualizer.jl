@@ -12,11 +12,12 @@ import CoordinateTransformations: Transformation,
                                   transform_deriv,
                                   IdentityTransformation,
                                   AbstractAffineMap,
+                                  AffineMap,
                                   Translation,
                                   compose
 import ColorTypes: RGB, RGBA, Colorant, red, green, blue, alpha
-import StaticArrays: SVector
-import Base: convert, length, show
+import StaticArrays: SVector, StaticArray, SMatrix
+import Base: convert, length, show, isempty, empty!, delete!
 import DataStructures: OrderedDict
 import JSON
 
@@ -52,6 +53,7 @@ const drake_visualizer_executable_name = "drake-visualizer"
 # typealias Link Vector{GeometryData}
 # typealias LinkDict{KeyType} OrderedDict{KeyType, Link}
 
+include("tree.jl")
 include("contour_meshes.jl")
 include("geometry_types.jl")
 include("json_conversions.jl")

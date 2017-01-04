@@ -1,10 +1,18 @@
-import Base: isempty
+using .Trees: LazyTree, data, children
 
-type GeometryData{G <: AbstractGeometry, T <: Transformation, C <: Colorant}
+# typealias Transform AffineMap{SMatrix{3, 3, Float64, 9}, SVector{3, Float64}}
+
+type GeometryData{G <: AbstractGeometry, C <: Colorant}
     geometry::G
-    transform::T
     color::C
 end
+
+type VisData
+    transform::Nullable{Transformation}
+    geometry::Nullable{GeometryData}
+end
+
+VisData() = VisData(Nullable{Transformation}(), Nullable{GeometryData}())
 
 type PointCloud{Point, Color} <: AbstractGeometry
     points::Vector{Point}
@@ -12,112 +20,100 @@ type PointCloud{Point, Color} <: AbstractGeometry
     intensities::Nullable{Vector{Float64}}
 end
 
-typealias Link Dict{String, GeometryData}
-
-abstract Command
-immutable Delete <: Command
-end
-command_name(::Delete) = "delete"
-immutable Load <: Command
-end
-command_name(::Load) = "load"
-immutable Draw <: Command
-end
-command_name(::Draw) = "draw"
+PointCloud{Point}(points::AbstractVector{Point}) =
+    PointCloud{Point, RGB{Float64}}(points, Nullable(), Nullable())
 
 immutable CommandQueue
-    delete::Set{String}
-    load::Set{String}
-    draw::Set{String}
+    delete::Vector{Vector{String}}
+    load::Vector{Vector{String}}
+    draw::Vector{Vector{String}}
 
-    CommandQueue() = new(Set{String}(), Set{String}(), Set{String}())
+    CommandQueue() = new(Vector{String}[], Vector{String}[], Vector{String}[])
+end
+
+isempty(queue::CommandQueue) = isempty(queue.delete) && isempty(queue.load) && isempty(queue.draw)
+
+function empty!(queue::CommandQueue)
+    empty!(queue.delete)
+    empty!(queue.load)
+    empty!(queue.draw)
 end
 
 immutable Visualizer
     lcm::LCM
-    links::OrderedDict{String, Link}
-    transforms::OrderedDict{String, Transformation}
+    tree::LazyTree{VisData}
     queue::CommandQueue
 
     function Visualizer(lcm::LCM=LCM())
-        vis = new(lcm,
-                    OrderedDict{String, Link}(),
-                    OrderedDict{String, Transformation}(),
-                    CommandQueue())
+        vis = new(lcm, LazyTree{VisData}(), CommandQueue())
         function handle_msg(channel, msg)
-            onresponse(vis, JSON.parse(msg[:data]))
+            onresponse(vis, msg)
         end
         subscribe(lcm, "DRAKE_VIEWER2_RESPONSE", handle_msg, drakevis[:viewer2_comms_t])
         vis
     end
 end
 
-function queue_load!(vis::Visualizer, path::AbstractString)
+function queue_load!(vis::Visualizer, path::AbstractVector)
+    queue_draw!(vis, path)
     push!(vis.queue.load, path)
 end
 
-function queue_load!(vis::Visualizer, path::AbstractString, link)
-    vis.links[path] = link
-    push!(vis.queue.load, path)
+function queue_load!(vis::Visualizer, path::AbstractVector, geom)
+    vis.tree[path].data.geometry = geom
+    queue_load!(vis, path)
 end
 
-function load!(vis::Visualizer, path::AbstractString, link)
-    queue_load!(vis, path, link)
+function load!(vis::Visualizer, path::AbstractVector, geom)
+    queue_load!(vis, path, geom)
     publish!(vis)
 end
 
-function queue_draw!(vis::Visualizer, path::String, tform)
-    vis.transforms[path] = tform
-    push!(vis.queue.draw, path)
+queue_draw!(vis::Visualizer, path::AbstractVector) = push!(vis.queue.draw, path)
+
+function queue_draw!(vis::Visualizer, path::AbstractVector, tform)
+    vis.tree[path].data.transform = tform
+    queue_draw!(vis, path)
 end
 
-function draw!(vis::Visualizer, path::String, tform)
+function draw!(vis::Visualizer, path::AbstractVector, tform)
     queue_draw!(vis, path, tform)
     publish!(vis)
 end
 
-function queue_delete!(vis::Visualizer, path::String)
-    delete!(vis.links, path)
-    delete!(vis.transforms, path)
+function queue_delete!(vis::Visualizer, path::AbstractVector)
+    delete!(vis.tree, path)
     push!(vis.queue.delete, path)
 end
 
-isempty(queue::CommandQueue) = isempty(queue.delete) && isempty(queue.load) && isempty(queue.draw)
-
-publish_order(vis::Visualizer) = ((Delete(), vis.queue.delete),
-                                  (Draw(), vis.queue.draw),
-                                  (Load(), vis.queue.load),
-                                  (Draw(), vis.queue.draw))
-
-function publish!(vis::Visualizer)
-    for (cmd, queue) in publish_order(vis)
-        publish!(vis, cmd, queue)
-    end
+function delete!(vis::Visualizer, path::AbstractVector)
+    queue_delete!(vis, path)
+    publish!(vis)
 end
 
-function publish!(vis::Visualizer, cmd::Command, queue)
-    if !isempty(queue)
-        data = serialize(vis, cmd, queue)
+
+function publish!(vis::Visualizer)
+    if !isempty(vis.queue)
+        data = serialize(vis, vis.queue)
         msg = to_lcm(data)
         publish(vis.lcm, "DRAKE_VIEWER2_REQUEST", msg)
         PyCall.pycall(vis.lcm.lcm_obj[:handle_timeout], PyCall.PyObject, 100)
+        true
+    else
+        false
     end
 end
 
-function onresponse(vis::Visualizer, msgdata)
-    data = msgdata["data"]
-    empty = []
-    for path in get(data, "missing_paths", empty)
-        queue_load!(vis, join(path, '/'))
-    end
-    for path in get(data, "drew_paths", empty)
-        delete!(vis.queue.draw, join(path, '/'))
-    end
-    for path in get(data, "loaded_paths", empty)
-        delete!(vis.queue.load, join(path, '/'))
-    end
-    for path in get(data, "deleted_paths", empty)
-        delete!(vis.queue.delete, join(path, '/'))
+function onresponse(vis::Visualizer, msg)
+    data = JSON.parse(msg[:data])
+    if data["status"] == 0
+        empty!(vis.queue)
+    elseif data["status"] == 1
+        for path in Trees.descendants(vis.tree)
+            queue_load!(vis, path)
+        end
+    else
+        error("unhandled: $data")
     end
 end
 
@@ -133,22 +129,39 @@ function to_lcm(data::Associative)
     msg
 end
 
-function serialize(vis::Visualizer, cmd::Command, queue)
+function serialize(vis::Visualizer, queue::CommandQueue)
     timestamp = time_ns()
     data = Dict(
         "timestamp" => timestamp,
-        "type" => command_name(cmd),
-        "data" => command_data(vis, cmd, queue)
+        "delete" => [],
+        "load" => [],
+        "draw" => []
     )
-end
-
-function command_data(vis::Visualizer, cmd::Delete, queue)
-    Dict("paths" => collect(queue))
-end
-
-function command_data(vis::Visualizer, cmd::Load, queue)
-    links = [serialize(p, vis.links[p]) for p in queue]
-    Dict("links" => links)
+    for path in queue.delete
+        push!(data["delete"], Dict("path" => path))
+    end
+    for path in queue.load
+        visdata = vis.tree[path].data
+        if !isnull(visdata.geometry)
+            push!(data["load"], serialize(path, get(visdata.geometry)))
+        end
+    end
+    for path in queue.draw
+        visdata = vis.tree[path].data
+        if isnull(visdata.transform)
+            transform = IdentityTransformation()
+        else
+            transform = get(visdata.transform)
+        end
+        push!(data["draw"],
+              Dict("path" => path,
+                   "transform" => serialize(
+                        compose(transform,
+                                intrinsic_transform(visdata.geometry)))
+              )
+        )
+    end
+    data
 end
 
 serialize(color::Colorant) = (red(color),
@@ -156,21 +169,15 @@ serialize(color::Colorant) = (red(color),
                               blue(color),
                               alpha(color))
 
-function serialize(path::String, link::Link)
-    geometries = [serialize(name, geom) for (name, geom) in link]
-    Dict("path" => split(path, '/'),
-        "geometries" => geometries)
-end
-
-function serialize(name::AbstractString, geomdata::GeometryData)
+function serialize(path::AbstractVector, geomdata::GeometryData)
     params = serialize(geomdata.geometry)
     params["color"] = serialize(geomdata.color)
-    intrinsic_tform = intrinsic_transform(geomdata.geometry)
-    Dict("name" => name,
-         "pose" => serialize(compose(geomdata.transform, intrinsic_tform)),
-         "parameters" => params)
+    Dict("path" => path,
+         "geometry" => params)
 end
 
+intrinsic_transform(geom::Nullable) = isnull(geom) ? IdentityTransformation() : intrinsic_transform(get(geom))
+intrinsic_transform(geomdata::GeometryData) = intrinsic_transform(geomdata.geometry)
 intrinsic_transform(geom::AbstractMesh) = IdentityTransformation()
 intrinsic_transform(geom::AbstractGeometry) = Translation(center(geom)...)
 intrinsic_transform(geom::PointCloud) = IdentityTransformation()
@@ -178,6 +185,7 @@ intrinsic_transform(geom::PointCloud) = IdentityTransformation()
 serialize(v::Vector) = v
 serialize(v::Vec) = convert(Vector, v)
 serialize(v::Point) = convert(Vector, v)
+serialize(v::StaticArray) = convert(Vector, v)
 serialize{N, T, Offset}(face::Face{N, T, Offset}) =
     convert(Vector, convert(Face{N, T, -1}, face))
 
@@ -208,16 +216,6 @@ function serialize(g::PointCloud)
         params["channels"]["intensity"] = serialize.(get(g.intensities))
     end
     params
-end
-
-function command_data(vis::Visualizer, cmd::Draw, queue)
-    commands = [serialize(p, vis.transforms[p]) for p in queue]
-    Dict("commands" => commands)
-end
-
-function serialize(path::String, tform::Transformation)
-    Dict("path" => split(path, '/'),
-        "pose" => serialize(tform))
 end
 
 function serialize(tform::Transformation)
