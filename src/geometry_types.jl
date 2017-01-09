@@ -19,3 +19,11 @@ center(geometry::HyperRectangle) = minimum(geometry) + 0.5 * widths(geometry)
 center(geometry::HyperCube) = minimum(geometry) + 0.5 * widths(geometry)
 center(geometry::HyperSphere) = origin(geometry)
 center(geometry::HyperEllipsoid) = origin(geometry)
+
+immutable PointCloud{Point} <: AbstractGeometry
+    points::Vector{Point}
+    channels::Dict{Symbol, Any}
+end
+
+PointCloud{Point}(points::AbstractVector{Point}) =
+    PointCloud{Point}(points, Dict{Symbol, Any}())
