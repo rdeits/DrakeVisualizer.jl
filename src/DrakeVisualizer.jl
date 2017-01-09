@@ -53,7 +53,7 @@ const drake_visualizer_executable_name = "drake-visualizer"
 # typealias Link Vector{GeometryData}
 # typealias LinkDict{KeyType} OrderedDict{KeyType, Link}
 
-include("tree.jl")
+include("lazytree.jl")
 include("contour_meshes.jl")
 include("geometry_types.jl")
 include("json_conversions.jl")
