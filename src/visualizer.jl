@@ -32,13 +32,14 @@ function empty!(queue::CommandQueue)
     empty!(queue.draw)
 end
 
-immutable Visualizer
+type Visualizer
     lcm::LCM
     tree::LazyTree{Symbol, VisData}
     queue::CommandQueue
+    publish_immediately::Bool
 
     function Visualizer(lcm::LCM=LCM())
-        vis = new(lcm, LazyTree{Symbol, VisData}(), CommandQueue())
+        vis = new(lcm, LazyTree{Symbol, VisData}(), CommandQueue(), true)
         function handle_msg(channel, msg)
             onresponse(vis, msg)
         end
@@ -47,12 +48,21 @@ immutable Visualizer
     end
 end
 
-function publish!(f::Function, vis::Visualizer)
-    f()
-    publish!(vis)
+function batch(func, vis::Visualizer)
+    old_publish_flag = vis.publish_immediately
+    try
+        vis.publish_immediately = false
+        func(vis)
+        publish!(vis)
+    finally
+        vis.publish_immediately = old_publish_flag
+    end
 end
 
-load!(vis::Visualizer, path::AbstractVector) = push!(vis.queue.load, path)
+function load!(vis::Visualizer, path::AbstractVector)
+    push!(vis.queue.load, path)
+    draw!(vis, path)
+end
 
 function load!(vis::Visualizer, path::AbstractVector, geom)
     vis.tree[path].data.geometries = [geom]
@@ -62,7 +72,12 @@ end
 load!(vis::Visualizer, path::AbstractVector, geom::AbstractGeometry) =
     load!(vis, path, GeometryData(geom))
 
-draw!(vis::Visualizer, path::AbstractVector) = push!(vis.queue.draw, path)
+function draw!(vis::Visualizer, path::AbstractVector)
+    push!(vis.queue.draw, path)
+    if vis.publish_immediately
+        publish!(vis)
+    end
+end
 
 function draw!(vis::Visualizer, path::AbstractVector, tform)
     vis.tree[path].data.transform = tform
@@ -72,6 +87,9 @@ end
 function delete!(vis::Visualizer, path::AbstractVector)
     delete!(vis.tree, path)
     push!(vis.queue.delete, path)
+    if vis.publish_immediately
+        publish!(vis)
+    end
 end
 
 function publish!(vis::Visualizer)
@@ -99,8 +117,8 @@ function onresponse(vis::Visualizer, msg)
     if data["status"] == 0
         empty!(vis.queue)
     elseif data["status"] == 1
-        for path in Trees.descendants(vis.tree)
-            queue_load!(vis, path)
+        for path in LazyTrees.descendants(vis.tree)
+            load!(vis, path)
         end
     else
         error("unhandled: $data")
