@@ -1,4 +1,4 @@
-function serialize(vis::Visualizer, queue::CommandQueue)
+function serialize(vis::CoreVisualizer, queue::CommandQueue)
     timestamp = time_ns()
     data = Dict(
         "timestamp" => timestamp,

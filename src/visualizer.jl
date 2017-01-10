@@ -1,4 +1,5 @@
 using .LazyTrees: LazyTree, data, children
+import Base: getindex
 
 type GeometryData{G <: AbstractGeometry, C <: Colorant}
     geometry::G
@@ -32,14 +33,16 @@ function empty!(queue::CommandQueue)
     empty!(queue.draw)
 end
 
-type Visualizer
+typealias VisTree LazyTree{Symbol, VisData}
+
+type CoreVisualizer
     lcm::LCM
-    tree::LazyTree{Symbol, VisData}
+    tree::VisTree
     queue::CommandQueue
     publish_immediately::Bool
 
-    function Visualizer(lcm::LCM=LCM())
-        vis = new(lcm, LazyTree{Symbol, VisData}(), CommandQueue(), true)
+    function CoreVisualizer(lcm::LCM=LCM())
+        vis = new(lcm, VisTree(), CommandQueue(), true)
         function handle_msg(channel, msg)
             onresponse(vis, msg)
         end
@@ -48,43 +51,32 @@ type Visualizer
     end
 end
 
-function batch(func, vis::Visualizer)
-    old_publish_flag = vis.publish_immediately
-    try
-        vis.publish_immediately = false
-        func(vis)
-        publish!(vis)
-    finally
-        vis.publish_immediately = old_publish_flag
-    end
-end
-
-function load!(vis::Visualizer, path::AbstractVector)
+function load!(vis::CoreVisualizer, path::AbstractVector)
     push!(vis.queue.load, path)
     draw!(vis, path)
 end
 
-function load!(vis::Visualizer, path::AbstractVector, geom)
+function load!(vis::CoreVisualizer, path::AbstractVector, geom)
     vis.tree[path].data.geometries = [geom]
     load!(vis, path)
 end
 
-load!(vis::Visualizer, path::AbstractVector, geom::AbstractGeometry) =
+load!(vis::CoreVisualizer, path::AbstractVector, geom::AbstractGeometry) =
     load!(vis, path, GeometryData(geom))
 
-function draw!(vis::Visualizer, path::AbstractVector)
+function draw!(vis::CoreVisualizer, path::AbstractVector)
     push!(vis.queue.draw, path)
     if vis.publish_immediately
         publish!(vis)
     end
 end
 
-function draw!(vis::Visualizer, path::AbstractVector, tform)
+function draw!(vis::CoreVisualizer, path::AbstractVector, tform)
     vis.tree[path].data.transform = tform
     draw!(vis, path)
 end
 
-function delete!(vis::Visualizer, path::AbstractVector)
+function delete!(vis::CoreVisualizer, path::AbstractVector)
     delete!(vis.tree, path)
     push!(vis.queue.delete, path)
     if vis.publish_immediately
@@ -92,7 +84,7 @@ function delete!(vis::Visualizer, path::AbstractVector)
     end
 end
 
-function publish!(vis::Visualizer)
+function publish!(vis::CoreVisualizer)
     if !isempty(vis.queue)
         data = serialize(vis, vis.queue)
         msg = to_lcm(data)
@@ -112,7 +104,7 @@ function publish!(vis::Visualizer)
     end
 end
 
-function onresponse(vis::Visualizer, msg)
+function onresponse(vis::CoreVisualizer, msg)
     data = JSON.parse(msg[:data])
     if data["status"] == 0
         empty!(vis.queue)
@@ -135,4 +127,61 @@ function to_lcm(data::Associative)
     msg[:num_bytes] = length(encoded)
     msg[:data] = encoded
     msg
+end
+
+immutable Visualizer
+    core::CoreVisualizer
+    path::Vector{Symbol}
+
+    Visualizer(lcm::LCM=LCM()) = new(CoreVisualizer(lcm), Symbol[])
+    Visualizer(core::CoreVisualizer, path::AbstractVector) = new(core, path)
+end
+
+load!(vis::Visualizer) = load!(vis.core, vis.path)
+load!(vis::Visualizer, geom) = load!(vis.core, vis.path, geom)
+draw!(vis::Visualizer) = draw!(vis.core, vis.path)
+draw!(vis::Visualizer, transform) = draw!(vis.core, vis.path, transform)
+delete!(vis::Visualizer) = delete!(vis.core, vis.path)
+publish!(vis::Visualizer) = publish!(vis.core)
+
+getindex(vis::Visualizer, path::Symbol) = Visualizer(vis.core, vcat(vis.path, path))
+
+function batch(func, vis::Visualizer)
+    old_publish_flag = vis.core.publish_immediately
+    try
+        vis.core.publish_immediately = false
+        func(vis)
+        publish!(vis)
+    finally
+        vis.core.publish_immediately = old_publish_flag
+    end
+end
+
+# Old-style visualizer interface
+function Visualizer(geom::GeometryData)
+    vis = Visualizer()
+    load!(vis[:body1], geom)
+    vis
+end
+
+Visualizer(geom::AbstractGeometry) = Visualizer(GeometryData(geom))
+
+function Visualizer(geoms::AbstractVector)
+    vis = Visualizer()
+    batch(vis) do v
+        for (i, geom) in enumerate(geoms)
+            load!(v[symbol("body$i")], geom)
+        end
+    end
+    vis
+end
+
+draw(vis::Visualizer, transform::Transformation) = draw!(vis[:body1], transform)
+
+function draw(vis::Visualizer, transforms::AbstractVector)
+    batch(vis) do v
+        for (i, tform) in enumerate(transforms)
+            draw!(v[symbol("body$i")], tform)
+        end
+    end
 end
