@@ -66,7 +66,7 @@ serialize{N, T, Offset}(face::Face{N, T, Offset}) =
     convert(Vector, convert(Face{N, T, -1}, face))
 serialize(g::HyperRectangle) = Dict("type" => "box", "lengths" => serialize(widths(g)))
 serialize(g::HyperSphere) = Dict("type" => "sphere", "radius" => radius(g))
-serialize(g::HyperEllipsoid) = Dict("type" => "ellipsoid", "radii" => radii(g))
+serialize(g::HyperEllipsoid) = Dict("type" => "ellipsoid", "radii" => serialize(radii(g)))
 serialize(g::HyperCylinder{3}) = Dict("type" => "cylinder",
                                       "length" => length(g),
                                       "radius" => radius(g))

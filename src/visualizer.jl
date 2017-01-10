@@ -145,6 +145,7 @@ delete!(vis::Visualizer) = delete!(vis.core, vis.path)
 publish!(vis::Visualizer) = publish!(vis.core)
 
 getindex(vis::Visualizer, path::Symbol) = Visualizer(vis.core, vcat(vis.path, path))
+getindex(vis::Visualizer, path::AbstractVector) = Visualizer(vis.core, vcat(vis.path, path))
 
 function batch(func, vis::Visualizer)
     old_publish_flag = vis.core.publish_immediately
@@ -170,7 +171,7 @@ function Visualizer(geoms::AbstractVector)
     vis = Visualizer()
     batch(vis) do v
         for (i, geom) in enumerate(geoms)
-            load!(v[symbol("body$i")], geom)
+            load!(v[Symbol("body$i")], geom)
         end
     end
     vis
@@ -181,7 +182,7 @@ draw(vis::Visualizer, transform::Transformation) = draw!(vis[:body1], transform)
 function draw(vis::Visualizer, transforms::AbstractVector)
     batch(vis) do v
         for (i, tform) in enumerate(transforms)
-            draw!(v[symbol("body$i")], tform)
+            draw!(v[Symbol("body$i")], tform)
         end
     end
 end

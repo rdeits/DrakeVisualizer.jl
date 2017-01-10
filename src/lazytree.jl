@@ -67,10 +67,10 @@ end
 
 function descendants{K}(t::LazyTree{K}, prefix=K[])
     result = Vector{Vector{K}}()
-    for child in keys(children(t))
-        childpath = vcat(prefix, child)
+    for (childname, child) in children(t)
+        childpath = vcat(prefix, childname)
         push!(result, childpath)
-        append!(result, descendants(children(t)[child], childpath))
+        append!(result, descendants(child, childpath))
     end
     result
 end

@@ -37,7 +37,7 @@ export GeometryData,
         publish!
 
 const drakevis = PyNULL()
-const drake_visualizer_executable_name = "drake-visualizer"
+const drake_visualizer_executable_name = "drake-visualizer -v2"
 
 include("lazytree.jl")
 include("contour_meshes.jl")
