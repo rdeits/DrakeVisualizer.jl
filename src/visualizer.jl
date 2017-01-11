@@ -18,11 +18,11 @@ VisData() = VisData(IdentityTransformation(), GeometryData[])
 typealias Path Vector{Symbol}
 
 immutable CommandQueue
-    delete::Vector{Path}
-    load::Vector{Path}
-    draw::Vector{Path}
+    delete::Set{Path}
+    load::Set{Path}
+    draw::Set{Path}
 
-    CommandQueue() = new(Path[], Path[], Path[])
+    CommandQueue() = new(Set{Path}(), Set{Path}(), Set{Path}())
 end
 
 isempty(queue::CommandQueue) = isempty(queue.delete) && isempty(queue.load) && isempty(queue.draw)
