@@ -106,6 +106,7 @@ end
 
 function onresponse(vis::CoreVisualizer, msg)
     data = JSON.parse(msg[:data])
+    println(data)
     if data["status"] == 0
         empty!(vis.queue)
     elseif data["status"] == 1
@@ -152,7 +153,9 @@ function batch(func, vis::Visualizer)
     try
         vis.core.publish_immediately = false
         func(vis)
-        publish!(vis)
+        if old_publish_flag
+            publish!(vis)
+        end
     finally
         vis.core.publish_immediately = old_publish_flag
     end
