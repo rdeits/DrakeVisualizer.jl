@@ -85,33 +85,31 @@ function delete!(vis::CoreVisualizer, path::AbstractVector)
 end
 
 function publish!(vis::CoreVisualizer)
-    if !isempty(vis.queue)
-        data = serialize(vis, vis.queue)
-        msg = to_lcm(data)
-        publish(vis.lcm, "DRAKE_VIEWER2_REQUEST", msg)
+    for i in 1:2
+        if !isempty(vis.queue)
+            data = serialize(vis, vis.queue)
+            msg = to_lcm(data)
+            publish(vis.lcm, "DRAKE_VIEWER2_REQUEST", msg)
 
-        # Wait at most 100ms for the first response
-        handle(vis.lcm, Dates.Millisecond(100))
+            # Wait at most 100ms for the first response
+            handle(vis.lcm, Dates.Millisecond(100))
 
-        # Clear the queue of any other messages
-        while handle(vis.lcm, Dates.Millisecond(0))
-            # nothing
+            # Clear the queue of any other messages
+            while handle(vis.lcm, Dates.Millisecond(0))
+                # nothing
+            end
         end
-
-        true
-    else
-        false
     end
 end
 
 function onresponse(vis::CoreVisualizer, msg)
     data = JSON.parse(msg[:data])
-    println(data)
     if data["status"] == 0
         empty!(vis.queue)
     elseif data["status"] == 1
         for path in LazyTrees.descendants(vis.tree)
-            load!(vis, path)
+            push!(vis.queue.load, path)
+            push!(vis.queue.draw, path)
         end
     else
         error("unhandled: $data")
