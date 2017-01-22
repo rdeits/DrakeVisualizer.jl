@@ -35,6 +35,7 @@ export GeometryData,
         draw!,
         delete!,
         publish!,
+        batch,
         draw
 
 const drakevis = PyNULL()
