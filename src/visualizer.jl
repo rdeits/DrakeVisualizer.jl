@@ -44,7 +44,15 @@ type CoreVisualizer
     function CoreVisualizer(lcm::LCM=LCM())
         vis = new(lcm, VisTree(), CommandQueue(), true)
         function handle_msg(channel, msg)
-            onresponse(vis, msg)
+            try
+                onresponse(vis, msg)
+            catch e
+                warn("""
+An error ocurred while handling the viewer response:
+    error: $e
+    response: $msg
+""")
+            end
         end
         subscribe(lcm, "DIRECTOR_TREE_VIEWER_RESPONSE", handle_msg, drakevis[:viewer2_comms_t])
         vis
