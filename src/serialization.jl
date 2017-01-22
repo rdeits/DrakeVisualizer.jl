@@ -1,29 +1,32 @@
 function serialize(vis::CoreVisualizer, queue::CommandQueue)
     utime = time_ns()
-    data = Dict(
-        "utime" => utime,
-        "delete" => [],
-        "load" => [],
-        "draw" => []
-    )
+    deletes = Dict{String, Any}[]
+    loads = Dict{String, Any}[]
+    draws = Dict{String, Any}[]
     for path in queue.delete
-        push!(data["delete"], Dict("path" => path))
+        push!(deletes, Dict("path" => path))
     end
     for path in queue.load
         visdata = vis.tree[path].data
         if length(visdata.geometries) > 0
-            push!(data["load"], serialize(path, visdata.geometries))
+            push!(loads, serialize(path, visdata.geometries))
         end
     end
     for path in queue.draw
         visdata = vis.tree[path].data
-        push!(data["draw"],
-              Dict("path" => path,
-                   "transform" => serialize(visdata.transform)
+        tform = serialize(visdata.transform)
+        push!(draws,
+              Dict{String, Any}("path" => path,
+                                "transform" => tform
               )
         )
     end
-    data
+    data = Dict{String, Any}(
+        "utime" => utime,
+        "delete" => deletes,
+        "load" => loads,
+        "draw" => draws
+    )
 end
 
 function serialize(path::AbstractVector, geomdatas::Vector{GeometryData})
@@ -90,8 +93,8 @@ function serialize(g::PointCloud)
 end
 
 function serialize(tform::Transformation)
-    Dict("translation" => translation(tform),
-         "quaternion" => quaternion(tform))
+    Dict{String, Vector{Float64}}("translation" => translation(tform),
+                      "quaternion" => quaternion(tform))
 end
 
 quaternion(::IdentityTransformation) = SVector(1., 0, 0, 0)

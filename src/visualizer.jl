@@ -18,11 +18,11 @@ VisData() = VisData(IdentityTransformation(), GeometryData[])
 typealias Path Vector{Symbol}
 
 immutable CommandQueue
-    delete::Vector{Path}
-    load::Vector{Path}
-    draw::Vector{Path}
+    delete::Set{Path}
+    load::Set{Path}
+    draw::Set{Path}
 
-    CommandQueue() = new(Path[], Path[], Path[])
+    CommandQueue() = new(Set{Path}(), Set{Path}(), Set{Path}())
 end
 
 isempty(queue::CommandQueue) = isempty(queue.delete) && isempty(queue.load) && isempty(queue.draw)
@@ -95,22 +95,20 @@ function delete!(vis::CoreVisualizer, path::AbstractVector)
 end
 
 function publish!(vis::CoreVisualizer)
-    if !isempty(vis.queue)
-        data = serialize(vis, vis.queue)
-        msg = to_lcm(data)
-        publish(vis.lcm, "DIRECTOR_TREE_VIEWER_REQUEST", msg)
+    for i in 1:2
+        if !isempty(vis.queue)
+            data = serialize(vis, vis.queue)
+            msg = to_lcm(data)
+            publish(vis.lcm, "DIRECTOR_TREE_VIEWER_REQUEST", msg)
 
-        # Wait at most 100ms for the first response
-        handle(vis.lcm, Dates.Millisecond(100))
+            # Wait at most 100ms for the first response
+            handle(vis.lcm, Dates.Millisecond(100))
 
-        # Clear the queue of any other messages
-        while handle(vis.lcm, Dates.Millisecond(0))
-            # nothing
+            # Clear the queue of any other messages
+            while handle(vis.lcm, Dates.Millisecond(0))
+                # nothing
+            end
         end
-
-        true
-    else
-        false
     end
 end
 
@@ -120,7 +118,8 @@ function onresponse(vis::CoreVisualizer, msg)
         empty!(vis.queue)
     elseif data["status"] == 1
         for path in LazyTrees.descendants(vis.tree)
-            load!(vis, path)
+            push!(vis.queue.load, path)
+            push!(vis.queue.draw, path)
         end
     else
         error("unhandled: $data")
@@ -172,7 +171,9 @@ function batch(func, vis::Visualizer)
     try
         vis.core.publish_immediately = false
         func(vis)
-        publish!(vis)
+        if old_publish_flag
+            publish!(vis)
+        end
     finally
         vis.core.publish_immediately = old_publish_flag
     end
