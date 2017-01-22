@@ -90,10 +90,10 @@ try
     #     draw(vis, Dict("rectangle" => Translation(1., 2, -1)))
     # end
     #
-    # @testset "destroy" begin
-    #     vis = Visualizer(HyperCylinder{3, Float64}(1.0, 2.0))
-    #     clear()
-    # end
+    @testset "destroy" begin
+        vis = Visualizer(HyperCylinder{3, Float64}(1.0, 2.0))
+        delete!(vis)
+    end
 
     # @testset "demo_notebook" begin
     #     if VERSION < v"0.6-dev"

@@ -59,10 +59,16 @@ setindex!{T <: LazyTree}(t::T, child::T, path::Vararg) = t[path] = child
 
 delete!{K}(t::LazyTree{K}, childname::K) = delete!(t.children, childname)
 function delete!(t::LazyTree, path::Union{Tuple, AbstractVector})
-    for p in path[1:end-1]
-        t = t[p]
+    if length(path) == 0
+        for child in keys(children(t))
+            delete!(t, child)
+        end
+    else
+        for p in path[1:end-1]
+            t = t[p]
+        end
+        delete!(t, path[end])
     end
-    delete!(t, path[end])
 end
 
 function descendants{K}(t::LazyTree{K}, prefix=K[])
