@@ -10,10 +10,10 @@ except ImportError:
 import struct
 
 class viewer2_comms_t(object):
-    __slots__ = ["timestamp", "format", "format_version_major", "format_version_minor", "num_bytes", "data"]
+    __slots__ = ["utime", "format", "format_version_major", "format_version_minor", "num_bytes", "data"]
 
     def __init__(self):
-        self.timestamp = 0
+        self.utime = 0
         self.format = ""
         self.format_version_major = 0
         self.format_version_minor = 0
@@ -27,7 +27,7 @@ class viewer2_comms_t(object):
         return buf.getvalue()
 
     def _encode_one(self, buf):
-        buf.write(struct.pack(">q", self.timestamp))
+        buf.write(struct.pack(">q", self.utime))
         __format_encoded = self.format.encode('utf-8')
         buf.write(struct.pack('>I', len(__format_encoded)+1))
         buf.write(__format_encoded)
@@ -47,7 +47,7 @@ class viewer2_comms_t(object):
 
     def _decode_one(buf):
         self = viewer2_comms_t()
-        self.timestamp = struct.unpack(">q", buf.read(8))[0]
+        self.utime = struct.unpack(">q", buf.read(8))[0]
         __format_len = struct.unpack('>I', buf.read(4))[0]
         self.format = buf.read(__format_len)[:-1].decode('utf-8', 'replace')
         self.format_version_major, self.format_version_minor, self.num_bytes = struct.unpack(">iii", buf.read(12))
@@ -58,7 +58,7 @@ class viewer2_comms_t(object):
     _hash = None
     def _get_hash_recursive(parents):
         if viewer2_comms_t in parents: return 0
-        tmphash = (0x3a3c6b684204d477) & 0xffffffffffffffff
+        tmphash = (0x69b4701f99e2b45f) & 0xffffffffffffffff
         tmphash  = (((tmphash<<1)&0xffffffffffffffff)  + (tmphash>>63)) & 0xffffffffffffffff
         return tmphash
     _get_hash_recursive = staticmethod(_get_hash_recursive)

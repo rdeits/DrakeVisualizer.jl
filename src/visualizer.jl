@@ -1,12 +1,12 @@
 using .LazyTrees: LazyTree, data, children
-import Base: getindex
+import Base: getindex, convert
 
 type GeometryData{G <: AbstractGeometry, C <: Colorant}
     geometry::G
     color::C
 end
 
-GeometryData(g::AbstractGeometry) = GeometryData(g, RGBA{Float64}(1, 0, 0, 0.5))
+convert{G <: GeometryData}(::Type{G}, g::Union{AbstractGeometry, AbstractMesh}) = GeometryData(g, RGBA{Float64}(1, 0, 0, 0.5))
 
 type VisData
     transform::Transformation
@@ -46,7 +46,7 @@ type CoreVisualizer
         function handle_msg(channel, msg)
             onresponse(vis, msg)
         end
-        subscribe(lcm, "DRAKE_VIEWER2_RESPONSE", handle_msg, drakevis[:viewer2_comms_t])
+        subscribe(lcm, "DIRECTOR_TREE_VIEWER_RESPONSE", handle_msg, drakevis[:viewer2_comms_t])
         vis
     end
 end
@@ -56,10 +56,12 @@ function load!(vis::CoreVisualizer, path::AbstractVector)
     draw!(vis, path)
 end
 
-function load!(vis::CoreVisualizer, path::AbstractVector, geom)
-    vis.tree[path].data.geometries = [geom]
+function load!(vis::CoreVisualizer, path::AbstractVector, geoms::AbstractVector)
+    vis.tree[path].data.geometries = geoms
     load!(vis, path)
 end
+
+load!(vis::CoreVisualizer, path::AbstractVector, geom) = load!(vis, path, [geom])
 
 load!(vis::CoreVisualizer, path::AbstractVector, geom::AbstractGeometry) =
     load!(vis, path, GeometryData(geom))
@@ -88,7 +90,7 @@ function publish!(vis::CoreVisualizer)
     if !isempty(vis.queue)
         data = serialize(vis, vis.queue)
         msg = to_lcm(data)
-        publish(vis.lcm, "DRAKE_VIEWER2_REQUEST", msg)
+        publish(vis.lcm, "DIRECTOR_TREE_VIEWER_REQUEST", msg)
 
         # Wait at most 100ms for the first response
         handle(vis.lcm, Dates.Millisecond(100))
@@ -119,8 +121,8 @@ end
 
 function to_lcm(data::Associative)
     msg = drakevis[:viewer2_comms_t]()
-    msg[:timestamp] = data["timestamp"]
-    msg[:format] = "viewer2_json"
+    msg[:utime] = data["utime"]
+    msg[:format] = "treeviewer_json"
     msg[:format_version_major] = 1
     msg[:format_version_minor] = 0
     encoded = JSON.json(data)
