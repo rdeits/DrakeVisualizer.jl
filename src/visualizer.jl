@@ -139,8 +139,18 @@ immutable Visualizer
     Visualizer(core::CoreVisualizer, path::AbstractVector) = new(core, path)
 end
 
-load!(vis::Visualizer) = load!(vis.core, vis.path)
-load!(vis::Visualizer, geom) = load!(vis.core, vis.path, geom)
+show(io::IO, vis::Visualizer) = print(io, "Visualizer with path prefix $(vis.path) using LCM $(vis.core.lcm)")
+
+function load!(vis::Visualizer)
+    load!(vis.core, vis.path)
+    vis
+end
+
+function load!(vis::Visualizer, geom)
+    load!(vis.core, vis.path, geom)
+    vis
+end
+
 draw!(vis::Visualizer) = draw!(vis.core, vis.path)
 draw!(vis::Visualizer, transform) = draw!(vis.core, vis.path, transform)
 delete!(vis::Visualizer) = delete!(vis.core, vis.path)
