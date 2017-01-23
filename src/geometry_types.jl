@@ -31,3 +31,10 @@ end
 
 PointCloud{Point}(points::AbstractVector{Point}) =
     PointCloud{Point}(points, Dict{Symbol, Any}())
+
+immutable Triad <: AbstractGeometry
+    scale::Float64
+    tube::Bool
+
+    Triad(scale=1.0, tube=true) = new(scale, tube)
+end

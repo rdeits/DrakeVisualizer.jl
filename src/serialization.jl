@@ -43,7 +43,8 @@ end
 function serialize(geomdata::GeometryData)
     params = serialize(geomdata.geometry)
     params["color"] = serialize(geomdata.color)
-    transform = intrinsic_transform(geomdata.geometry)
+    transform = compose(geomdata.transform,
+                        intrinsic_transform(geomdata.geometry))
     if transform != IdentityTransformation()
         params["transform"] = serialize(transform)
     end
@@ -55,6 +56,7 @@ intrinsic_transform(geomdata::GeometryData) = intrinsic_transform(geomdata.geome
 intrinsic_transform(geom::AbstractMesh) = IdentityTransformation()
 intrinsic_transform(geom::AbstractGeometry) = Translation(center(geom)...)
 intrinsic_transform(geom::PointCloud) = IdentityTransformation()
+intrinsic_transform(triad::Triad) = IdentityTransformation()
 
 serialize(color::Colorant) = (red(color),
                               green(color),
@@ -75,6 +77,7 @@ serialize(g::HyperCylinder{3}) = Dict("type" => "cylinder",
                                       "radius" => radius(g))
 serialize(g::HyperCube) = Dict("type" => "box", "lengths" => widths(g))
 serialize(g::GeometryPrimitive) = serialize(GLNormalMesh(g))
+serialize(g::Triad) = Dict{String, Any}("type" => "triad")
 
 function serialize(g::AbstractMesh)
     Dict("type" => "mesh_data",

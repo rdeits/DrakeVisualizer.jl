@@ -1,12 +1,16 @@
 using .LazyTrees: LazyTree, data, children
 import Base: getindex, convert
 
-type GeometryData{G <: AbstractGeometry, C <: Colorant}
+type GeometryData{G <: AbstractGeometry, C <: Colorant, T <: Transformation}
     geometry::G
     color::C
+    transform::T
 end
 
-convert{G <: GeometryData}(::Type{G}, g::Union{AbstractGeometry, AbstractMesh}) = GeometryData(g, RGBA{Float64}(1, 0, 0, 0.5))
+GeometryData(g, c::Colorant) = GeometryData(g, c, IdentityTransformation())
+GeometryData(g, t::Transformation) = GeometryData(g, RGBA(1, 0, 0, 0.5), t)
+
+convert{G <: GeometryData}(::Type{G}, g::Union{AbstractGeometry, AbstractMesh}) = GeometryData(g, RGBA(1, 0, 0, 0.5))
 
 type VisData
     transform::Transformation
