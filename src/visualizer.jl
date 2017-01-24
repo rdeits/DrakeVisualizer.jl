@@ -58,7 +58,10 @@ An error ocurred while handling the viewer response:
 """)
             end
         end
-        subscribe(lcm, "DIRECTOR_TREE_VIEWER_RESPONSE", handle_msg, drakevis[:viewer2_comms_t])
+        subscribe(lcm, "DIRECTOR_TREE_VIEWER_RESPONSE", handle_msg, Comms.CommsT)
+        @async while true
+            handle(lcm)
+        end
         vis
     end
 end
@@ -99,25 +102,15 @@ function delete!(vis::CoreVisualizer, path::AbstractVector)
 end
 
 function publish!(vis::CoreVisualizer)
-    for i in 1:2
-        if !isempty(vis.queue)
-            data = serialize(vis, vis.queue)
-            msg = to_lcm(data)
-            publish(vis.lcm, "DIRECTOR_TREE_VIEWER_REQUEST", msg)
-
-            # Wait at most 100ms for the first response
-            handle(vis.lcm, Dates.Millisecond(100))
-
-            # Clear the queue of any other messages
-            while handle(vis.lcm, Dates.Millisecond(0))
-                # nothing
-            end
-        end
+    if !isempty(vis.queue)
+        data = serialize(vis, vis.queue)
+        msg = to_lcm(data)
+        publish(vis.lcm, "DIRECTOR_TREE_VIEWER_REQUEST", msg)
     end
 end
 
 function onresponse(vis::CoreVisualizer, msg)
-    data = JSON.parse(msg[:data])
+    data = JSON.parse(IOBuffer(msg.data))
     if data["status"] == 0
         empty!(vis.queue)
     elseif data["status"] == 1
@@ -125,21 +118,19 @@ function onresponse(vis::CoreVisualizer, msg)
             push!(vis.queue.load, path)
             push!(vis.queue.draw, path)
         end
+        publish!(vis)
     else
         error("unhandled: $data")
     end
 end
 
 function to_lcm(data::Associative)
-    msg = drakevis[:viewer2_comms_t]()
-    msg[:utime] = data["utime"]
-    msg[:format] = "treeviewer_json"
-    msg[:format_version_major] = 1
-    msg[:format_version_minor] = 0
-    encoded = JSON.json(data)
-    msg[:num_bytes] = length(encoded)
-    msg[:data] = encoded
-    msg
+    Comms.CommsT(
+        data["utime"],
+        "treeviewer_json",
+        1,
+        0,
+        JSON.json(data))
 end
 
 immutable Visualizer

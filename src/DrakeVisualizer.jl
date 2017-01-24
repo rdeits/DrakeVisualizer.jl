@@ -2,11 +2,10 @@ __precompile__()
 
 module DrakeVisualizer
 
-using PyLCM
+using LCMCore
 using GeometryTypes
 import GeometryTypes: origin, radius
 import Meshing
-import PyCall: pyimport, PyObject, PyNULL, PyVector
 import Rotations: Rotation, Quat
 import CoordinateTransformations: Transformation,
                                   transform_deriv,
@@ -38,7 +37,6 @@ export GeometryData,
         batch,
         draw
 
-const drakevis = PyNULL()
 const drake_visualizer_executable_name = "drake-visualizer"
 
 function new_window()
@@ -64,17 +62,11 @@ function any_open_windows()
     end
 end
 
+include("lcmtypes/comms_t.jl")
 include("lazytree.jl")
 include("contour_meshes.jl")
 include("geometry_types.jl")
 include("visualizer.jl")
 include("serialization.jl")
-
-function __init__()
-    lcmtypes_path = abspath(joinpath(dirname(@__FILE__), "lcmtypes"))
-    println("adding: $(lcmtypes_path) to the python path")
-    unshift!(PyVector(pyimport("sys")["path"]), lcmtypes_path)
-    copy!(drakevis, pyimport("drakevis"))
-end
 
 end
