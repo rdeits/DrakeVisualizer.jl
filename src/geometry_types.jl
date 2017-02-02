@@ -6,6 +6,7 @@ end
 
 origin{N, T}(geometry::HyperEllipsoid{N, T}) = geometry.center
 radii{N, T}(geometry::HyperEllipsoid{N, T}) = geometry.radii
+center(geometry::HyperEllipsoid) = origin(geometry)
 
 type HyperCylinder{N, T} <: GeometryTypes.GeometryPrimitive{N, T}
     length::T # along last axis
@@ -15,7 +16,25 @@ end
 
 length(geometry::HyperCylinder) = geometry.length
 radius(geometry::HyperCylinder) = geometry.radius
+origin{N, T}(geometry::HyperCylinder{N, T}) = zeros(SVector{N, T})
+center(g::HyperCylinder) = origin(g)
+
 center(geometry::HyperRectangle) = minimum(geometry) + 0.5 * widths(geometry)
 center(geometry::HyperCube) = minimum(geometry) + 0.5 * widths(geometry)
 center(geometry::HyperSphere) = origin(geometry)
-center(geometry::HyperEllipsoid) = origin(geometry)
+
+
+immutable PointCloud{Point} <: AbstractGeometry
+    points::Vector{Point}
+    channels::Dict{Symbol, Any}
+end
+
+PointCloud{Point}(points::AbstractVector{Point}) =
+    PointCloud{Point}(points, Dict{Symbol, Any}())
+
+immutable Triad <: AbstractGeometry
+    scale::Float64
+    tube::Bool
+
+    Triad(scale=1.0, tube=true) = new(scale, tube)
+end
