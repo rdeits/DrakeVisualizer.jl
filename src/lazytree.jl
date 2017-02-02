@@ -23,8 +23,33 @@ function show(io::IO, t::LazyTree)
 end
 
 children(t::LazyTree) = t.children
-data(t::LazyTree) = get(t.data)
+data(t::LazyTree) = t.data
 parent(t::LazyTree) = get(t.parent)
+
+function setindex!{T <: LazyTree}(t::T, child::T, childname)
+    t.children[childname] = child
+    child.parent = t
+end
+setindex!{K, T}(t::LazyTree{K, T}, childdata::T, childname::K) =
+    setindex!(t, LazyTree{K, T}(childdata), childname)
+setindex!{K, T}(t::LazyTree{K, T}, childdata, childname::K) =
+    setindex!(t, convert(T, childdata), childname)
+
+function setindex!{N, K}(t::LazyTree{K}, child, path::NTuple{N, K})
+    for i in 1:(length(path) - 1)
+        t = t[path[i]]
+    end
+    t[path[end]] = child
+end
+
+function setindex!{K}(t::LazyTree{K}, child, path::AbstractVector{K})
+    for i in 1:(length(path) - 1)
+        t = t[path[i]]
+    end
+    t[path[end]] = child
+end
+
+setindex!{K, T}(t::LazyTree{K, T}, child, path::Vararg{K}) = t[path] = child
 
 function getindex{T <: LazyTree}(t::T, childname)
     if haskey(children(t), childname)
@@ -36,12 +61,14 @@ function getindex{T <: LazyTree}(t::T, childname)
     end
 end
 
-function setindex!{T <: LazyTree}(t::T, child::T, childname)
-    t.children[childname] = child
-    child.parent = t
+function getindex{K, N}(t::LazyTree{K}, path::NTuple{N, K})
+    for childname in path
+        t = t[childname]
+    end
+    t
 end
 
-function getindex{K}(t::LazyTree{K}, path::Union{Tuple{Vararg{K}}, AbstractVector{K}})
+function getindex{K}(t::LazyTree{K}, path::AbstractVector{K})
     for childname in path
         t = t[childname]
     end
@@ -49,13 +76,6 @@ function getindex{K}(t::LazyTree{K}, path::Union{Tuple{Vararg{K}}, AbstractVecto
 end
 
 getindex{K}(t::LazyTree{K}, path::Vararg{K}) = getindex(t, path)
-
-function setindex!{T <: LazyTree, N, K}(t::T, child::T, path::Union{NTuple{N, K}, AbstractVector{K}})
-    t[path[1]][path[2:end]] = child
-end
-
-setindex!{T <: LazyTree}(t::T, child::T, path::Tuple) = t[path[1]] = child
-setindex!{T <: LazyTree}(t::T, child::T, path::Vararg) = t[path] = child
 
 delete!{K}(t::LazyTree{K}, childname::K) = delete!(t.children, childname)
 function delete!(t::LazyTree, path::Union{Tuple, AbstractVector})
