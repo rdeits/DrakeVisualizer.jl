@@ -80,11 +80,11 @@ try
     end
 
     @testset "demo_notebook" begin
-        if VERSION < v"0.6-dev"
-            jupyter = IJulia.jupyter
-            demo_file = "../demo.ipynb"
-            run(`$jupyter nbconvert --to notebook --execute $(demo_file) --output $(demo_file)`)
-        end
+        jupyter = IJulia.jupyter
+        demo_file = "../demo.ipynb"
+        tmpfile = joinpath(dirname(@__FILE__), "demo.generated")
+        run(`$jupyter nbconvert $demo_file --to script --output $tmpfile`)
+        include("$tmpfile.jl")
     end
 finally
     kill(proc)
