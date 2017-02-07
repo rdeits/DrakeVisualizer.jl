@@ -9,10 +9,9 @@ using StaticArrays: SMatrix, SVector
 type LazyTree{K, T}
     data::T
     children::Dict{K, LazyTree{K, T}}
-    parent::Nullable{LazyTree{K, T}}
 
-    LazyTree() = new(T(), Dict{K, LazyTree{K, T}}(), Nullable{LazyTree{K, T}}())
-    LazyTree(data::T) = new(data, Dict{K, LazyTree{K, T}}(), Nullable{LazyTree{K, T}}())
+    LazyTree() = new(T(), Dict{K, LazyTree{K, T}}())
+    LazyTree(data::T) = new(data, Dict{K, LazyTree{K, T}}())
 end
 
 function show(io::IO, t::LazyTree)
@@ -24,11 +23,9 @@ end
 
 children(t::LazyTree) = t.children
 data(t::LazyTree) = t.data
-parent(t::LazyTree) = get(t.parent)
 
 function setindex!{T <: LazyTree}(t::T, child::T, childname)
     t.children[childname] = child
-    child.parent = t
 end
 setindex!{K, T}(t::LazyTree{K, T}, childdata::T, childname::K) =
     setindex!(t, LazyTree{K, T}(childdata), childname)
