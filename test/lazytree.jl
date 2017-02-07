@@ -3,12 +3,10 @@ using DrakeVisualizer.LazyTrees: LazyTree, children, data, delete!, descendants
 @testset "LazyTrees" begin
     @testset "constructors" begin
         t = LazyTree{Symbol, Vector{Int}}()
-        @test isnull(t.parent)
         @test isempty(children(t))
         show(IOBuffer(), t)
 
         t2 = LazyTree{Symbol, Vector{Int}}(Int[])
-        @test isnull(t2.parent)
         @test isempty(children(t))
         show(IOBuffer(), t2)
     end
