@@ -31,12 +31,12 @@ export GeometryData,
         HyperCube,
         PointCloud,
         contour_mesh,
+        settransform!,
+        setgeometry!,
         load!,
         draw!,
         delete!,
-        publish!,
-        batch,
-        draw
+        batch
 
 const drake_visualizer_executable_name = "drake-visualizer"
 
@@ -69,5 +69,8 @@ include("contour_meshes.jl")
 include("geometry_types.jl")
 include("visualizer.jl")
 include("serialization.jl")
+
+@deprecate load!(args...) setgeometry!(args...)
+@deprecate draw!(args...) settransform!(args...)
 
 end

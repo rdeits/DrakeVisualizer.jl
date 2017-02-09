@@ -1,21 +1,21 @@
 function serialize(vis::CoreVisualizer, queue::CommandQueue)
     utime = time_ns()
-    deletes = Dict{String, Any}[]
-    loads = Dict{String, Any}[]
-    draws = Dict{String, Any}[]
+    delete_cmds = Dict{String, Any}[]
+    setgeometry_cmds = Dict{String, Any}[]
+    settransform_cmds = Dict{String, Any}[]
     for path in queue.delete
-        push!(deletes, Dict("path" => path))
+        push!(delete_cmds, Dict("path" => path))
     end
-    for path in queue.load
+    for path in queue.setgeometry
         visdata = vis.tree[path].data
         if length(visdata.geometries) > 0
-            push!(loads, serialize(path, visdata.geometries))
+            push!(setgeometry_cmds, serialize(path, visdata.geometries))
         end
     end
-    for path in queue.draw
+    for path in queue.settransform
         visdata = vis.tree[path].data
         tform = serialize(visdata.transform)
-        push!(draws,
+        push!(settransform_cmds,
               Dict{String, Any}("path" => path,
                                 "transform" => tform
               )
@@ -23,9 +23,9 @@ function serialize(vis::CoreVisualizer, queue::CommandQueue)
     end
     data = Dict{String, Any}(
         "utime" => utime,
-        "delete" => deletes,
-        "load" => loads,
-        "draw" => draws
+        "delete" => delete_cmds,
+        "setgeometry" => setgeometry_cmds,
+        "settransform" => settransform_cmds
     )
 end
 

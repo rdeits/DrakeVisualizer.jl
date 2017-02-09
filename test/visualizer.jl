@@ -9,21 +9,10 @@ try
     end
 
     @testset "robot_load" begin
-        f = x -> norm(x)^2
+        f = x -> norm(x)^2 - 1
         bounds = HyperRectangle(Vec(0.,0,0), Vec(1.,1,1))
         geom = contour_mesh(f, minimum(bounds), maximum(bounds))
         vis = Visualizer(geom)
-    end
-
-    @testset "link_list_load" begin
-        links = Vector{Vector{GeometryData}}()
-        levels = [0.5; 1]
-        for i = 1:2
-            f = x -> norm(x)^2
-            geom = contour_mesh(f, Vec(0.,0,0), Vec(1.,1,1), levels[i])
-            push!(links, [geom])
-        end
-        vis = Visualizer(links)
     end
 
     @testset "geom_load" begin
@@ -33,18 +22,16 @@ try
         vis = Visualizer(geom)
     end
 
-
     @testset "robot_draw" begin
-        links = Vector{Vector{GeometryData}}()
-        link_lengths = [1.; 2; 3]
+        vis = Visualizer()
+
+        link_lengths = [1., 2, 3]
         for (i, l) in enumerate(link_lengths)
             geometry = HyperRectangle(Vec(0., -0.1, -0.1), Vec(l, 0.2, 0.2))
-            geometry_data = GeometryData(geometry)
-            push!(links, [geometry_data])
+            setgeometry!(vis[Symbol("link_$i")], geometry)
         end
 
-
-        function link_origins(joint_angles)
+        function set_link_transforms(joint_angles)
             transforms = Array{Transformation}(length(link_lengths))
             transforms[1] = LinearMap(AngleAxis(joint_angles[1], 0, 0, 1.0))
             for i = 2:length(link_lengths)
@@ -53,14 +40,15 @@ try
                             )
                 transforms[i] = compose(transforms[i-1], T)
             end
-            transforms
+            batch(vis) do v
+                for (i, tform) in enumerate(transforms)
+                    settransform!(vis[Symbol("link_$i")], tform)
+                end
+            end
         end
 
-        model = Visualizer(links)
-
         for x in product([linspace(-pi, pi, 11) for i in 1:length(link_lengths)]...)
-            origins = link_origins(reverse(x))
-            draw(model, origins)
+            set_link_transforms(reverse(x))
         end
     end
 
@@ -77,6 +65,12 @@ try
     @testset "destroy" begin
         vis = Visualizer(HyperCylinder{3, Float64}(1.0, 2.0))
         delete!(vis)
+    end
+
+    @testset "deprecations" begin
+        vis = Visualizer()
+        load!(vis, HyperCylinder{3, Float64}(1.0, 2.0))
+        draw!(vis, IdentityTransformation())
     end
 
     @testset "demo_notebook" begin
