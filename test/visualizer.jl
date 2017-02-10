@@ -77,5 +77,5 @@ end
     demo_file = "../demo.ipynb"
     tmpfile = joinpath(dirname(@__FILE__), "demo.generated")
     run(`$jupyter nbconvert $demo_file --to script --output $tmpfile`)
-    include("$tmpfile.jl")
+    include("$tmpfile.jl");
 end
