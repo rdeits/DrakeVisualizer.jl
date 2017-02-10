@@ -23,18 +23,18 @@ typealias Path Vector{Symbol}
 
 immutable CommandQueue
     delete::Set{Path}
-    load::Set{Path}
-    draw::Set{Path}
+    setgeometry::Set{Path}
+    settransform::Set{Path}
 
     CommandQueue() = new(Set{Path}(), Set{Path}(), Set{Path}())
 end
 
-isempty(queue::CommandQueue) = isempty(queue.delete) && isempty(queue.load) && isempty(queue.draw)
+isempty(queue::CommandQueue) = isempty(queue.delete) && isempty(queue.setgeometry) && isempty(queue.settransform)
 
 function empty!(queue::CommandQueue)
     empty!(queue.delete)
-    empty!(queue.load)
-    empty!(queue.draw)
+    empty!(queue.setgeometry)
+    empty!(queue.settransform)
 end
 
 typealias VisTree LazyTree{Symbol, VisData}
@@ -66,31 +66,31 @@ An error ocurred while handling the viewer response:
     end
 end
 
-function load!(vis::CoreVisualizer, path::AbstractVector)
-    push!(vis.queue.load, path)
-    draw!(vis, path)
+function setgeometry!(vis::CoreVisualizer, path::AbstractVector)
+    push!(vis.queue.setgeometry, path)
+    settransform!(vis, path)
 end
 
-function load!(vis::CoreVisualizer, path::AbstractVector, geoms::AbstractVector)
+function setgeometry!(vis::CoreVisualizer, path::AbstractVector, geoms::AbstractVector)
     vis.tree[path].data.geometries = geoms
-    load!(vis, path)
+    setgeometry!(vis, path)
 end
 
-load!(vis::CoreVisualizer, path::AbstractVector, geom) = load!(vis, path, [geom])
+setgeometry!(vis::CoreVisualizer, path::AbstractVector, geom) = setgeometry!(vis, path, [geom])
 
-load!(vis::CoreVisualizer, path::AbstractVector, geom::AbstractGeometry) =
-    load!(vis, path, GeometryData(geom))
+setgeometry!(vis::CoreVisualizer, path::AbstractVector, geom::AbstractGeometry) =
+    setgeometry!(vis, path, GeometryData(geom))
 
-function draw!(vis::CoreVisualizer, path::AbstractVector)
-    push!(vis.queue.draw, path)
+function settransform!(vis::CoreVisualizer, path::AbstractVector)
+    push!(vis.queue.settransform, path)
     if vis.publish_immediately
         publish!(vis)
     end
 end
 
-function draw!(vis::CoreVisualizer, path::AbstractVector, tform)
+function settransform!(vis::CoreVisualizer, path::AbstractVector, tform)
     vis.tree[path].data.transform = tform
-    draw!(vis, path)
+    settransform!(vis, path)
 end
 
 function delete!(vis::CoreVisualizer, path::AbstractVector)
@@ -115,8 +115,8 @@ function onresponse(vis::CoreVisualizer, msg)
         empty!(vis.queue)
     elseif data["status"] == 1
         for path in LazyTrees.descendants(vis.tree)
-            push!(vis.queue.load, path)
-            push!(vis.queue.draw, path)
+            push!(vis.queue.setgeometry, path)
+            push!(vis.queue.settransform, path)
         end
         publish!(vis)
     else
@@ -143,18 +143,18 @@ end
 
 show(io::IO, vis::Visualizer) = print(io, "Visualizer with path prefix $(vis.path) using LCM $(vis.core.lcm)")
 
-function load!(vis::Visualizer)
-    load!(vis.core, vis.path)
+function setgeometry!(vis::Visualizer)
+    setgeometry!(vis.core, vis.path)
     vis
 end
 
-function load!(vis::Visualizer, geom)
-    load!(vis.core, vis.path, geom)
+function setgeometry!(vis::Visualizer, geom)
+    setgeometry!(vis.core, vis.path, geom)
     vis
 end
 
-draw!(vis::Visualizer) = draw!(vis.core, vis.path)
-draw!(vis::Visualizer, transform) = draw!(vis.core, vis.path, transform)
+settransform!(vis::Visualizer) = settransform!(vis.core, vis.path)
+settransform!(vis::Visualizer, transform) = settransform!(vis.core, vis.path, transform)
 delete!(vis::Visualizer) = delete!(vis.core, vis.path)
 publish!(vis::Visualizer) = publish!(vis.core)
 
@@ -177,28 +177,8 @@ end
 # Old-style visualizer interface
 function Visualizer(geom::GeometryData)
     vis = Visualizer()
-    load!(vis[:body1], geom)
+    setgeometry!(vis[:body1], geom)
     vis
 end
 
 Visualizer(geom::AbstractGeometry) = Visualizer(GeometryData(geom))
-
-function Visualizer(geoms::AbstractVector)
-    vis = Visualizer()
-    batch(vis) do v
-        for (i, geom) in enumerate(geoms)
-            load!(v[Symbol("body$i")], geom)
-        end
-    end
-    vis
-end
-
-draw(vis::Visualizer, transform::Transformation) = draw!(vis[:body1], transform)
-
-function draw(vis::Visualizer, transforms::AbstractVector)
-    batch(vis) do v
-        for (i, tform) in enumerate(transforms)
-            draw!(v[Symbol("body$i")], tform)
-        end
-    end
-end
