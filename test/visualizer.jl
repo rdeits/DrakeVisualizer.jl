@@ -1,85 +1,81 @@
 proc = DrakeVisualizer.new_window()
 
-try
-    @testset "open window" begin
-        if is_apple() || is_linux()
-            # @test DrakeVisualizer.any_open_windows() # doesn't pass when running headless
-            DrakeVisualizer.any_open_windows()
+@testset "open window" begin
+    if is_apple() || is_linux()
+        # @test DrakeVisualizer.any_open_windows() # doesn't pass when running headless
+        DrakeVisualizer.any_open_windows()
+    end
+end
+
+@testset "robot_load" begin
+    f = x -> norm(x)^2 - 1
+    bounds = HyperRectangle(Vec(0.,0,0), Vec(1.,1,1))
+    geom = contour_mesh(f, minimum(bounds), maximum(bounds))
+    vis = Visualizer(geom)
+end
+
+@testset "geom_load" begin
+    f = x -> norm(x)^2
+    iso_level = 0.5
+    geom = GeometryData(contour_mesh(f, [0.,0,0], [1.,1,1], iso_level))
+    vis = Visualizer(geom)
+end
+
+@testset "robot_draw" begin
+    vis = Visualizer()
+
+    link_lengths = [1., 2, 3]
+    for (i, l) in enumerate(link_lengths)
+        geometry = HyperRectangle(Vec(0., -0.1, -0.1), Vec(l, 0.2, 0.2))
+        setgeometry!(vis[Symbol("link_$i")], geometry)
+    end
+
+    function set_link_transforms(joint_angles)
+        transforms = Array{Transformation}(length(link_lengths))
+        transforms[1] = LinearMap(AngleAxis(joint_angles[1], 0, 0, 1.0))
+        for i = 2:length(link_lengths)
+            T = compose(Translation(link_lengths[i-1], 0, 0),
+                        LinearMap(AngleAxis(joint_angles[i], 0, 0, 1.0))
+                        )
+            transforms[i] = compose(transforms[i-1], T)
         end
-    end
-
-    @testset "robot_load" begin
-        f = x -> norm(x)^2 - 1
-        bounds = HyperRectangle(Vec(0.,0,0), Vec(1.,1,1))
-        geom = contour_mesh(f, minimum(bounds), maximum(bounds))
-        vis = Visualizer(geom)
-    end
-
-    @testset "geom_load" begin
-        f = x -> norm(x)^2
-        iso_level = 0.5
-        geom = GeometryData(contour_mesh(f, [0.,0,0], [1.,1,1], iso_level))
-        vis = Visualizer(geom)
-    end
-
-    @testset "robot_draw" begin
-        vis = Visualizer()
-
-        link_lengths = [1., 2, 3]
-        for (i, l) in enumerate(link_lengths)
-            geometry = HyperRectangle(Vec(0., -0.1, -0.1), Vec(l, 0.2, 0.2))
-            setgeometry!(vis[Symbol("link_$i")], geometry)
-        end
-
-        function set_link_transforms(joint_angles)
-            transforms = Array{Transformation}(length(link_lengths))
-            transforms[1] = LinearMap(AngleAxis(joint_angles[1], 0, 0, 1.0))
-            for i = 2:length(link_lengths)
-                T = compose(Translation(link_lengths[i-1], 0, 0),
-                            LinearMap(AngleAxis(joint_angles[i], 0, 0, 1.0))
-                            )
-                transforms[i] = compose(transforms[i-1], T)
-            end
-            batch(vis) do v
-                for (i, tform) in enumerate(transforms)
-                    settransform!(vis[Symbol("link_$i")], tform)
-                end
+        batch(vis) do v
+            for (i, tform) in enumerate(transforms)
+                settransform!(vis[Symbol("link_$i")], tform)
             end
         end
-
-        for x in product([linspace(-pi, pi, 11) for i in 1:length(link_lengths)]...)
-            set_link_transforms(reverse(x))
-        end
     end
 
-    @testset "ellipsoid" begin
-        ellipsoid = DrakeVisualizer.HyperEllipsoid(Point(1.,0,0.1), Vec(0.3, 0.2, 0.1))
-        Visualizer(ellipsoid)
+    for x in product([linspace(-pi, pi, 11) for i in 1:length(link_lengths)]...)
+        set_link_transforms(reverse(x))
     end
+end
 
-    @testset "cylinder" begin
-        cylinder = DrakeVisualizer.HyperCylinder{3, Float64}(1.0, 0.5)
-        Visualizer(cylinder)
-    end
+@testset "ellipsoid" begin
+    ellipsoid = DrakeVisualizer.HyperEllipsoid(Point(1.,0,0.1), Vec(0.3, 0.2, 0.1))
+    Visualizer(ellipsoid)
+end
 
-    @testset "destroy" begin
-        vis = Visualizer(HyperCylinder{3, Float64}(1.0, 2.0))
-        delete!(vis)
-    end
+@testset "cylinder" begin
+    cylinder = DrakeVisualizer.HyperCylinder{3, Float64}(1.0, 0.5)
+    Visualizer(cylinder)
+end
 
-    @testset "deprecations" begin
-        vis = Visualizer()
-        load!(vis, HyperCylinder{3, Float64}(1.0, 2.0))
-        draw!(vis, IdentityTransformation())
-    end
+@testset "destroy" begin
+    vis = Visualizer(HyperCylinder{3, Float64}(1.0, 2.0))
+    delete!(vis)
+end
 
-    @testset "demo_notebook" begin
-        jupyter = IJulia.jupyter
-        demo_file = "../demo.ipynb"
-        tmpfile = joinpath(dirname(@__FILE__), "demo.generated")
-        run(`$jupyter nbconvert $demo_file --to script --output $tmpfile`)
-        include("$tmpfile.jl")
-    end
-finally
-    kill(proc)
+@testset "deprecations" begin
+    vis = Visualizer()
+    load!(vis, HyperCylinder{3, Float64}(1.0, 2.0))
+    draw!(vis, IdentityTransformation())
+end
+
+@testset "demo_notebook" begin
+    jupyter = IJulia.jupyter
+    demo_file = "../demo.ipynb"
+    tmpfile = joinpath(dirname(@__FILE__), "demo.generated")
+    run(`$jupyter nbconvert $demo_file --to script --output $tmpfile`)
+    include("$tmpfile.jl")
 end
