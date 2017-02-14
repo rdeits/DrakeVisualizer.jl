@@ -59,9 +59,6 @@ An error ocurred while handling the viewer response:
             end
         end
         subscribe(lcm, "DIRECTOR_TREE_VIEWER_RESPONSE", handle_msg, Comms.CommsT)
-        @async while true
-            handle(lcm)
-        end
         vis
     end
 end
@@ -106,6 +103,7 @@ function publish!(vis::CoreVisualizer)
         data = serialize(vis, vis.queue)
         msg = to_lcm(data)
         publish(vis.lcm, "DIRECTOR_TREE_VIEWER_REQUEST", msg)
+        empty!(vis.queue)
     end
 end
 
@@ -176,8 +174,8 @@ end
 
 # Old-style visualizer interface
 function Visualizer(geom::GeometryData)
-    vis = Visualizer()
-    setgeometry!(vis[:body1], geom)
+    vis = Visualizer()[:body1]
+    setgeometry!(vis, geom)
     vis
 end
 
