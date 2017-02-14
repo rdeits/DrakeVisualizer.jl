@@ -71,11 +71,3 @@ end
     load!(vis, HyperCylinder{3, Float64}(1.0, 2.0))
     draw!(vis, IdentityTransformation())
 end
-
-@testset "demo_notebook" begin
-    jupyter = IJulia.jupyter
-    demo_file = "../demo.ipynb"
-    tmpfile = joinpath(dirname(@__FILE__), "demo.generated")
-    run(`$jupyter nbconvert $demo_file --to script --output $tmpfile`)
-    include("$tmpfile.jl");
-end
