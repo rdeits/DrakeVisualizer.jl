@@ -8,7 +8,7 @@ origin{N, T}(geometry::HyperEllipsoid{N, T}) = geometry.center
 radii{N, T}(geometry::HyperEllipsoid{N, T}) = geometry.radii
 center(geometry::HyperEllipsoid) = origin(geometry)
 
-type HyperCylinder{N, T} <: GeometryTypes.GeometryPrimitive{N, T}
+type HyperCylinder{N, T} <: GeometryPrimitive{N, T}
     length::T # along last axis
     radius::T
     # origin is at center

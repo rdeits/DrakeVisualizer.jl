@@ -51,12 +51,10 @@ function serialize(geomdata::GeometryData)
     params
 end
 
-intrinsic_transform(geom::Nullable) = isnull(geom) ? IdentityTransformation() : intrinsic_transform(get(geom))
+intrinsic_transform(g) = IdentityTransformation()
+intrinsic_transform(g::Nullable) = isnull(g) ? IdentityTransformation() : intrinsic_transform(get(g))
 intrinsic_transform(geomdata::GeometryData) = intrinsic_transform(geomdata.geometry)
-intrinsic_transform(geom::AbstractMesh) = IdentityTransformation()
-intrinsic_transform(geom::AbstractGeometry) = Translation(center(geom)...)
-intrinsic_transform(geom::PointCloud) = IdentityTransformation()
-intrinsic_transform(triad::Triad) = IdentityTransformation()
+intrinsic_transform(g::GeometryPrimitive) = Translation(center(g)...)
 
 serialize(color::Colorant) = (red(color),
                               green(color),
