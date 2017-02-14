@@ -1,4 +1,6 @@
-Iterators
-IJulia
-Interact
-MeshIO
+Iterators 0.2
+IJulia 1.4.1
+Interact 0.4
+MeshIO 0.0.6
+Polyhedra 0.1.3
+CDDLib 0.1.2
