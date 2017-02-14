@@ -54,7 +54,11 @@ end
 intrinsic_transform(g) = IdentityTransformation()
 intrinsic_transform(g::Nullable) = isnull(g) ? IdentityTransformation() : intrinsic_transform(get(g))
 intrinsic_transform(geomdata::GeometryData) = intrinsic_transform(geomdata.geometry)
-intrinsic_transform(g::GeometryPrimitive) = Translation(center(g)...)
+intrinsic_transform(g::HyperRectangle) = Translation(center(g)...)
+intrinsic_transform(g::HyperSphere) = Translation(center(g)...)
+intrinsic_transform(g::HyperEllipsoid) = Translation(center(g)...)
+intrinsic_transform(g::HyperCylinder) = Translation(center(g)...)
+intrinsic_transform(g::HyperCube) = Translation(center(g)...)
 
 serialize(color::Colorant) = (red(color),
                               green(color),
