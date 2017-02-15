@@ -16,6 +16,16 @@ On Ubuntu, the precompiled binaries of `director` require the following packages
 
 On macOS, the binaries should already include all dependencies.
 
+# Troubleshooting
+
+If you have issues with the Director application itself (like your geometry not showing up), you may have an out-of-date version of the Director binaries. To clear the downloaded binaries, you can run:
+
+    julia> DrakeVisualizer.delete_director_binaries()
+
+After which you will need to re-download the binaries with:
+
+    julia> Pkg.build("DrakeVisualizer")
+
 ## Linux: Configuring Large UDP Packets
 
 `DrakeVisualizer` uses [LCM](http://lcm-proj.github.io/) for communication, and LCM uses UDP under the hood. Very large LCM messages (like those created when loading a robot with lots of mesh geometries) can result in UDP packets being dropped, which will result in you not seeing anything in the visualizer. If that happens to you, you'll need to follow the instructions in [this comment](https://github.com/rdeits/DrakeVisualizer.jl/issues/19#issuecomment-267429751). Edit `/etc/sysctl.conf` and add:

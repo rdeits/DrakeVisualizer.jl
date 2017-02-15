@@ -63,6 +63,27 @@ function any_open_windows()
     end
 end
 
+function delete_director_binaries(skip_confirmation=false)
+    if !skip_confirmation
+        print("CAUTION: This will delete all downloaded binaries of Director. After doing this, you will need to run 'Pkg.build(\"DrakeVisualizer\")'. Proceed? (y/n) ")
+        choice = chomp(readline())
+        if lowercase(choice[1]) != 'y'
+            println("Canceled.")
+            return
+        end
+    end
+    root = joinpath(Pkg.dir("DrakeVisualizer", "deps"))
+    binary_paths = [
+        joinpath(root, "usr"),
+        joinpath(root, "downloads"),
+        joinpath(root, "deps.jl")
+    ]
+    for path in binary_paths
+        println("Removing $path")
+        rm(path, force=true, recursive=true)
+    end
+end
+
 include("lcmtypes/comms_t.jl")
 include("lazytree.jl")
 include("contour_meshes.jl")
