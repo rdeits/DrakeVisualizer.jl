@@ -1,5 +1,6 @@
-using .LazyTrees: LazyTree, data, children
+using Base.Dates: Millisecond
 import Base: getindex, convert
+using .LazyTrees: LazyTree, data, children
 
 type GeometryData{G <: AbstractGeometry, C <: Colorant, T <: Transformation}
     geometry::G
@@ -41,12 +42,14 @@ typealias VisTree LazyTree{Symbol, VisData}
 
 type CoreVisualizer
     lcm::LCM
+    client_id::String
     tree::VisTree
     queue::CommandQueue
     publish_immediately::Bool
 
     function CoreVisualizer(lcm::LCM=LCM())
-        vis = new(lcm, VisTree(), CommandQueue(), true)
+        client_id = tempname()
+        vis = new(lcm, client_id, VisTree(), CommandQueue(), true)
         function handle_msg(channel, msg)
             try
                 onresponse(vis, msg)
@@ -58,10 +61,16 @@ An error ocurred while handling the viewer response:
 """)
             end
         end
-        subscribe(lcm, "DIRECTOR_TREE_VIEWER_RESPONSE", handle_msg, Comms.CommsT)
+        sub = subscribe(lcm, response_channel(vis), handle_msg, Comms.CommsT)
+        @async while true
+            handle(lcm)
+        end
         vis
     end
 end
+
+request_channel(vis::CoreVisualizer) = "DIRECTOR_TREE_VIEWER_REQUEST_<$(vis.client_id)>"
+response_channel(vis::CoreVisualizer) = "DIRECTOR_TREE_VIEWER_RESPONSE_<$(vis.client_id)>"
 
 function setgeometry!(vis::CoreVisualizer, path::AbstractVector)
     push!(vis.queue.setgeometry, path)
@@ -102,7 +111,7 @@ function publish!(vis::CoreVisualizer)
     if !isempty(vis.queue)
         data = serialize(vis, vis.queue)
         msg = to_lcm(data)
-        publish(vis.lcm, "DIRECTOR_TREE_VIEWER_REQUEST", msg)
+        publish(vis.lcm, request_channel(vis), msg)
         empty!(vis.queue)
     end
 end
