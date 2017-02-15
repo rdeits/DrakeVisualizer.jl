@@ -40,7 +40,7 @@ end
 
 typealias VisTree LazyTree{Symbol, VisData}
 
-    type CoreVisualizer
+type CoreVisualizer
     lcm::LCM
     client_id::String
     tree::VisTree
