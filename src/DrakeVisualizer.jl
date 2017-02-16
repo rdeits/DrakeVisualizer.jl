@@ -64,20 +64,25 @@ function any_open_windows()
 end
 
 function delete_director_binaries(skip_confirmation=false)
+    root = joinpath(dirname(dirname(@__FILE__)), "deps")
+    binary_paths = [
+        joinpath(root, "usr"),
+        joinpath(root, "downloads"),
+        joinpath(root, "deps.jl")
+    ]
     if !skip_confirmation
-        print("CAUTION: This will delete all downloaded binaries of Director. After doing this, you will need to run 'Pkg.build(\"DrakeVisualizer\")'. Proceed? (y/n) ")
+        println("CAUTION: This will delete all downloaded binaries of Director.")
+        println("The following paths will be deleted:")
+        for path in binary_paths
+            println(path)
+        end
+        print("After doing this, you will need to run 'Pkg.build(\"DrakeVisualizer\")'. Proceed? (y/n) ")
         choice = chomp(readline())
         if lowercase(choice[1]) != 'y'
             println("Canceled.")
             return
         end
     end
-    root = joinpath(Pkg.dir("DrakeVisualizer", "deps"))
-    binary_paths = [
-        joinpath(root, "usr"),
-        joinpath(root, "downloads"),
-        joinpath(root, "deps.jl")
-    ]
     for path in binary_paths
         println("Removing $path")
         rm(path, force=true, recursive=true)
