@@ -48,7 +48,7 @@ type CoreVisualizer
     publish_immediately::Bool
 
     function CoreVisualizer(lcm::LCM=LCM())
-        client_id = tempname()
+        client_id = "jl_$(Base.Random.randstring())"  # 10^14 possibilities
         vis = new(lcm, client_id, VisTree(), CommandQueue(), true)
         function handle_msg(channel, msg)
             try
