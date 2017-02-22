@@ -13,6 +13,7 @@ On Ubuntu, the precompiled binaries of `director` require the following packages
 
     libvtk5-qt4-dev
     python-vtk
+    python-numpy
 
 On macOS, the binaries should already include all dependencies.
 
