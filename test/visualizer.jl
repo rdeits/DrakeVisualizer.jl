@@ -61,6 +61,20 @@ end
     Visualizer(cylinder)
 end
 
+@testset "lines and arrows" begin
+    vis = Visualizer()
+
+    setgeometry!(vis[:arrow],
+                 PolyLine([[0, 0, 0], [0, 0, 1], [1, 0, 1]], end_head=ArrowHead(0.05, 0.2), radius=0.02))
+
+    setgeometry!(vis[:hairline], PolyLine([[0, 1, 0], [0, 1, 1]], radius=0))
+
+    setgeometry!(vis[:double_arrow], PolyLine([[-1, 0, 0.5], [-0.5, 0, 0.5]],
+                                              end_head=ArrowHead(),
+                                              start_head=ArrowHead()))
+end
+
+
 @testset "destroy" begin
     vis = Visualizer(HyperCylinder{3, Float64}(1.0, 2.0))
     delete!(vis)
