@@ -38,3 +38,31 @@ immutable Triad <: AbstractGeometry
 
     Triad(scale=1.0, tube=true) = new(scale, tube)
 end
+
+immutable ArrowHead
+    radius::Float64
+    length::Float64
+
+    ArrowHead(radius=0.05, length=radius) = new(radius, length)
+end
+
+immutable PolyLine{Point} <: AbstractGeometry
+    points::Vector{Point}
+    radius::Float64
+    closed::Bool
+    start_head::Nullable{ArrowHead}
+    end_head::Nullable{ArrowHead}
+end
+
+PolyLine{Point}(points::AbstractVector{Point}, radius, closed, start_head, end_head) =
+    PolyLine{Point}(points, radius, closed, start_head, end_head)
+
+function PolyLine(points::AbstractVector;
+    radius=0.01,
+    closed=false,
+    start_head=nothing,
+    end_head=nothing)
+    PolyLine(points, radius, closed,
+             start_head,
+             end_head)
+end

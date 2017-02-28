@@ -99,6 +99,25 @@ function serialize(g::PointCloud)
     params
 end
 
+function serialize(g::PolyLine)
+    params = Dict("type" => "line",
+                  "points" => serialize.(g.points),
+                  "radius" => g.radius,
+                  "closed" => g.closed
+        )
+    if !isnull(g.start_head)
+        params["start_head"] = true
+        params["head_radius"] = get(g.start_head).radius
+        params["head_length"] = get(g.start_head).length
+    end
+    if !isnull(g.end_head)
+        params["end_head"] = true
+        params["head_radius"] = get(g.end_head).radius
+        params["head_length"] = get(g.end_head).length
+    end
+    params
+end
+
 function serialize(tform::Transformation)
     Dict{String, Vector{Float64}}("translation" => translation(tform),
                       "quaternion" => quaternion(tform))
