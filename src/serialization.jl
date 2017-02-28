@@ -79,7 +79,9 @@ serialize(g::HyperCylinder{3}) = Dict("type" => "cylinder",
                                       "radius" => radius(g))
 serialize(g::HyperCube) = Dict("type" => "box", "lengths" => widths(g))
 serialize(g::GeometryPrimitive) = serialize(GLNormalMesh(g))
-serialize(g::Triad) = Dict{String, Any}("type" => "triad")
+serialize(g::Triad) = Dict{String, Any}("type" => "triad",
+                                        "scale" => g.scale,
+                                        "tube" => g.tube)
 
 function serialize(g::AbstractMesh)
     Dict("type" => "mesh_data",
