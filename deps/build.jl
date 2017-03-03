@@ -54,8 +54,6 @@ director_sha = "26aa67486749c6dd5e220a1cc37dd83e44d32b4c"
         provides(CMakeProcess(srcdir=joinpath(basedir, "src",
                                               "director-$(director_sha)", "distro", "superbuild"),
                               cmake_args=["-DUSE_LCM=ON",
-                                          "-DUSE_LIBBOT=ON",
-                                          "-DUSE_LCMGL=ON",
                                           "-DUSE_EXTERNAL_INSTALL:BOOL=ON"],
                               targetname=""),
                  director)
