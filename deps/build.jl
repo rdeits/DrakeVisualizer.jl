@@ -28,9 +28,10 @@ director_sha = "26aa67486749c6dd5e220a1cc37dd83e44d32b4c"
     linux_distributor = strip(readstring(`lsb_release -i -s`))
     linux_version = VersionNumber(strip(readstring(`lsb_release -r -s`)))
 
+    force_source_build = lowercase(get(ENV, "DIRECTOR_BUILD_FROM_SOURCE", "")) in ["true", "1"]
     use_binaries = (linux_distributor == "Ubuntu"
                     && linux_version >= v"14.04"
-                    && !haskey(ENV, "DIRECTOR_BUILD_FROM_SOURCE"))
+                    && !force_source_build)
 
     if use_binaries
         if linux_version >= v"16.04"
