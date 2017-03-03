@@ -58,7 +58,7 @@ PolyLine{Point}(points::AbstractVector{Point}, radius, closed, start_head, end_h
     PolyLine{Point}(points, radius, closed, start_head, end_head)
 
 function PolyLine(points::AbstractVector;
-    radius=0.01,
+    radius=0.0,
     closed=false,
     start_head=nothing,
     end_head=nothing)

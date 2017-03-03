@@ -3,7 +3,7 @@ using BinDeps
 @BinDeps.setup
 
 basedir = dirname(@__FILE__)
-director_version = "0.1.0-29-g190fc82"
+director_version = "0.1.0-35-g26aa674"
 
 @static if is_linux()
     deps = [

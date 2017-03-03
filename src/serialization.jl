@@ -8,9 +8,7 @@ function serialize(vis::CoreVisualizer, queue::CommandQueue)
     end
     for path in queue.setgeometry
         visdata = vis.tree[path].data
-        if length(visdata.geometries) > 0
-            push!(setgeometry_cmds, serialize(path, visdata.geometries))
-        end
+        push!(setgeometry_cmds, serialize(path, visdata.geometries))
     end
     for path in queue.settransform
         visdata = vis.tree[path].data
