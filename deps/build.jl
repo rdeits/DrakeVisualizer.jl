@@ -5,7 +5,7 @@ using CMakeWrapper
 
 basedir = dirname(@__FILE__)
 director_version = "0.1.0-35-g26aa674"
-director_sha = "26aa67486749c6dd5e220a1cc37dd83e44d32b4c"
+director_sha = "1f69904c03b083e95035a2cd3070d59a942c9618"
 
 @static if is_linux()
     deps = [
