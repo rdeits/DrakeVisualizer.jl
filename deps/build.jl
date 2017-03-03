@@ -30,7 +30,7 @@ director_sha = "26aa67486749c6dd5e220a1cc37dd83e44d32b4c"
 
     use_binaries = (linux_distributor == "Ubuntu"
                     && linux_version >= v"14.04"
-                    && !haskey(env, "DIRECTOR_BUILD_FROM_SOURCE"))
+                    && !haskey(ENV, "DIRECTOR_BUILD_FROM_SOURCE"))
 
     if use_binaries
         if linux_version >= v"16.04"
