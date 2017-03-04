@@ -16,17 +16,20 @@ director_sha = "1f69904c03b083e95035a2cd3070d59a942c9618"
             end)
         director = library_dependency("ddApp", aliases=["libddApp"], depends=[python_vtk, python])
     ]
-    # The vtkPython libraries all have undeclared dependencies on libpython2.7,
-    # so they cannot be dlopen()ed without missing symbol errors. As a result,
-    # we can't use the regular library_dependency mechanism to look for vtk5
-    # and python-vtk. Instead, we combined both dependencies into "python_vtk"
-    # and make one build rule to apt-get install all the vtk-related packages.
-    provides(SimpleBuild,
-        () -> run(`sudo apt-get install libvtk5-qt4-dev python-vtk`),
-        python_vtk)
 
     linux_distributor = strip(readstring(`lsb_release -i -s`))
     linux_version = VersionNumber(strip(readstring(`lsb_release -r -s`)))
+
+    if linux_distributor == "Ubuntu"
+        # The vtkPython libraries all have undeclared dependencies on libpython2.7,
+        # so they cannot be dlopen()ed without missing symbol errors. As a result,
+        # we can't use the regular library_dependency mechanism to look for vtk5
+        # and python-vtk. Instead, we combined both dependencies into "python_vtk"
+        # and make one build rule to apt-get install all the vtk-related packages.
+        provides(SimpleBuild,
+            () -> run(`sudo apt-get install libvtk5-qt4-dev python-vtk`),
+            python_vtk)
+    end
 
     force_source_build = lowercase(get(ENV, "DIRECTOR_BUILD_FROM_SOURCE", "")) in ["true", "1"]
     use_binaries = (linux_distributor == "Ubuntu"
