@@ -71,6 +71,8 @@ function delete_director_binaries(skip_confirmation=false)
     binary_paths = [
         joinpath(root, "usr"),
         joinpath(root, "downloads"),
+        joinpath(root, "src"),
+        joinpath(root, "builds"),
         joinpath(root, "deps.jl")
     ]
     if !skip_confirmation

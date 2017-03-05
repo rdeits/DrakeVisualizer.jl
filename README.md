@@ -7,15 +7,21 @@ This package provides a Julia interface to the Drake Visualizer, part of the [Dr
 
 # Installation
 
-On Linux and macOS, this package will attempt to download the pre-built binaries of `director` from <http://people.csail.mit.edu/patmarion/software/director/>. If this fails, you'll need to install those binaries yourself, or compile `director` from source.
+DrakeVisualizer.jl uses [BinDeps.jl](https://github.com/JuliaLang/BinDeps.jl) to try to automatically install an appropriate copy of Director for you. On Ubuntu (14.04 and higher) and macOS, this package will attempt to download the pre-built binaries of Director from <http://people.csail.mit.edu/patmarion/software/director/>. On other Linux platforms, it will compile Director from source. If you would like to force Director to build from source on any platform, just set the environment variable `DIRECTOR_BUILD_FROM_SOURCE=1`. 
 
-On Ubuntu, the precompiled binaries of `director` require the following packages to be installed via `apt-get`:
+## Dependencies
+
+On Ubuntu (14.04 and up) and macOS, all of Director's dependencies will automatically be installed using BinDeps.jl. On other platforms, you'll need to provide them yourself. Director requires VTK5 with Qt4 and the python bindings. These packages are available via `apt-get` as:
 
     libvtk5-qt4-dev
     python-vtk
     python-numpy
 
-On macOS, the binaries should already include all dependencies.
+On Arch Linux, you can install an appropriate version of VTK by running:
+
+	git clone https://aur.archlinux.org/vtk-multi-python.git
+	cd vtk-multi-python
+	makepkg -si
 
 # Troubleshooting
 
