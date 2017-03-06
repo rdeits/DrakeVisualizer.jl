@@ -26,11 +26,5 @@ notifications:
   email: false
 branches:
   only: master
-
-script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone("https://github.com/rdeits/CMakeWrapper.jl.git")'
-  - julia -e 'Pkg.build("CMakeWrapper")'
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("DrakeVisualizer"); Pkg.test("DrakeVisualizer"; coverage=true)'
 after_success:
   - julia -e 'cd(Pkg.dir("DrakeVisualizer")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
