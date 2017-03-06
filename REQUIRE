@@ -9,3 +9,4 @@ CoordinateTransformations 0.2.0
 StaticArrays 0.0.4
 DataStructures 0.4
 JSON 0.8
+CMakeWrapper 0.0.1
