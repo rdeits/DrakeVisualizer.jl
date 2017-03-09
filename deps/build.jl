@@ -20,7 +20,7 @@ director_sha = "1f69904c03b083e95035a2cd3070d59a942c9618"
     linux_distributor = strip(readstring(`lsb_release -i -s`))
     linux_version = VersionNumber(strip(readstring(`lsb_release -r -s`)))
 
-    if linux_distributor == "Ubuntu"
+    if linux_distributor == "Ubuntu" || linux_distributor == "Debian"
         # The vtkPython libraries all have undeclared dependencies on libpython2.7,
         # so they cannot be dlopen()ed without missing symbol errors. As a result,
         # we can't use the regular library_dependency mechanism to look for vtk5
@@ -32,19 +32,26 @@ director_sha = "1f69904c03b083e95035a2cd3070d59a942c9618"
     end
 
     force_source_build = lowercase(get(ENV, "DIRECTOR_BUILD_FROM_SOURCE", "")) in ["true", "1"]
-    use_binaries = (linux_distributor == "Ubuntu"
-                    && linux_version >= v"14.04"
-                    && !force_source_build)
 
-    if use_binaries
-        if linux_version >= v"16.04"
-            director_variant = "ubuntu-16.04"
-        else
-            director_variant = "ubuntu-14.04"
+    director_binary = nothing
+    if !force_source_build
+        if linux_distributor == "Ubuntu"
+            if linux_version >= v"16.04"
+                director_binary = "ubuntu-16.04"
+            elseif linux_version >= v"14.04"
+                director_binary = "ubuntu-14.04"
+            end
+        elseif linux_distributor == "Debian"
+            if linux_version >= v"8.7"
+                director_binary = "ubuntu-14.04"
+            end
         end
+    end
+
+    if director_binary !== nothing
         provides(AptGet, Dict("python2.7" => python))
         provides(BuildProcess, (@build_steps begin
-            FileDownloader("http://people.csail.mit.edu/patmarion/software/director/releases/director-$(director_version)-$(director_variant).tar.gz",
+            FileDownloader("http://people.csail.mit.edu/patmarion/software/director/releases/director-$(director_version)-$(director_binary).tar.gz",
                            joinpath(basedir, "downloads", "director.tar.gz"))
             CreateDirectory(joinpath(basedir, "usr"))
             (`tar xzf $(joinpath(basedir, "downloads", "director.tar.gz")) --directory=usr --strip-components=1`)
