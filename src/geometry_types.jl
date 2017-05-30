@@ -24,15 +24,15 @@ center(geometry::HyperCube) = minimum(geometry) + 0.5 * widths(geometry)
 center(geometry::HyperSphere) = origin(geometry)
 
 
-immutable PointCloud{Point} <: AbstractGeometry
+immutable PointCloud{T, Point <: StaticArray{Tuple{3}, T}} <: AbstractGeometry{3, T}
     points::Vector{Point}
     channels::Dict{Symbol, Any}
 end
 
-PointCloud{Point}(points::AbstractVector{Point}) =
-    PointCloud{Point}(points, Dict{Symbol, Any}())
+PointCloud(points::AbstractVector{Point}) where {T, Point <: StaticArray{Tuple{3}, T}} =
+    PointCloud{T, Point}(points, Dict{Symbol, Any}())
 
-immutable Triad <: AbstractGeometry
+immutable Triad <: AbstractGeometry{3, Float64}
     scale::Float64
     tube::Bool
 
@@ -46,7 +46,7 @@ immutable ArrowHead
     ArrowHead(radius=0.05, length=radius) = new(radius, length)
 end
 
-immutable PolyLine{Point} <: AbstractGeometry
+immutable PolyLine{T, Point <: StaticArray{Tuple{3}, T}} <: AbstractGeometry{3, T}
     points::Vector{Point}
     radius::Float64
     closed::Bool
@@ -54,8 +54,11 @@ immutable PolyLine{Point} <: AbstractGeometry
     end_head::Nullable{ArrowHead}
 end
 
-PolyLine{Point}(points::AbstractVector{Point}, radius, closed, start_head, end_head) =
-    PolyLine{Point}(points, radius, closed, start_head, end_head)
+PolyLine(points::AbstractVector{Point}, radius, closed, start_head, end_head) where {T, Point <: StaticArray{Tuple{3}, T}} =
+    PolyLine{T, Point}(points, radius, closed, start_head, end_head)
+
+PolyLine(points::AbstractVector{V}, args...) where {T, V <: AbstractVector{T}} = 
+    PolyLine(convert.(Point{3, Float64}, points), args...)
 
 function PolyLine(points::AbstractVector;
     radius=0.0,

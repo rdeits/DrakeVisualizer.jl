@@ -1,4 +1,5 @@
 using DrakeVisualizer.LazyTrees: LazyTree, children, data, delete!, descendants
+using Base.Test
 
 @testset "LazyTrees" begin
     @testset "constructors" begin

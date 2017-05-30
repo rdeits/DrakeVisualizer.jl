@@ -6,21 +6,17 @@ sudo: required
 matrix:
   include:
     - os: linux
-      julia: 0.5
-    - os: linux
       julia: 0.6
     - os: linux
-      julia: 0.5
-      env: DIRECTOR_BUILD_FROM_SOURCE=1
+      julia: nightly
     - os: linux
       julia: 0.6
       env: DIRECTOR_BUILD_FROM_SOURCE=1
-    - os: osx
-      julia: 0.5
+    - os: linux
+      julia: nightly
+      env: DIRECTOR_BUILD_FROM_SOURCE=1
     - os: osx
       julia: 0.6
-  allow_failures:
-    - julia: 0.6
 
 notifications:
   email: false

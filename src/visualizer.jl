@@ -2,7 +2,7 @@ using Base.Dates: Millisecond
 import Base: getindex, convert
 using .LazyTrees: LazyTree, data, children
 
-type GeometryData{G <: AbstractGeometry, C <: Colorant, T <: Transformation}
+type GeometryData{G <: Union{AbstractGeometry, AbstractMesh}, C <: Colorant, T <: Transformation}
     geometry::G
     color::C
     transform::T
@@ -20,7 +20,7 @@ end
 
 VisData() = VisData(IdentityTransformation(), GeometryData[])
 
-typealias Path Vector{Symbol}
+const Path = Vector{Symbol}
 
 immutable CommandQueue
     delete::Set{Path}
@@ -38,7 +38,7 @@ function empty!(queue::CommandQueue)
     empty!(queue.settransform)
 end
 
-typealias VisTree LazyTree{Symbol, VisData}
+const VisTree = LazyTree{Symbol, VisData}
 
 type CoreVisualizer
     lcm::LCM
@@ -188,4 +188,4 @@ function Visualizer(geom::GeometryData)
     vis
 end
 
-Visualizer(geom::AbstractGeometry) = Visualizer(GeometryData(geom))
+Visualizer(geom::Union{AbstractGeometry, AbstractMesh}) = Visualizer(GeometryData(geom))
