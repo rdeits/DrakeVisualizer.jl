@@ -1,9 +1,9 @@
-proc = DrakeVisualizer.new_window()
-
 @testset "open window" begin
     if is_apple() || is_linux()
         # @test DrakeVisualizer.any_open_windows() # doesn't pass when running headless
-        DrakeVisualizer.any_open_windows()
+        DrakeVisualizer.any_open_windows() || DrakeVisualizer.new_window()
+    else
+        DrakeVisualizer.new_window()
     end
 end
 
@@ -84,4 +84,5 @@ end
     vis = Visualizer()
     load!(vis, HyperCylinder{3, Float64}(1.0, 2.0))
     draw!(vis, IdentityTransformation())
+    delete!(vis)
 end
