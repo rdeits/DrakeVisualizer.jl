@@ -1,0 +1,1 @@
+These demos were created by Aykut Satici ( @Symplectomorphism ) to demonstrate the kinematics and dynamics of various mechanisms. In addition to DrakeVisualizer.jl, the demos require the NLsolve.jl and DifferentialEquations.jl packages. 
