@@ -32,6 +32,9 @@ end
 PointCloud(points::AbstractVector{Point}) where {T, Point <: StaticArray{Tuple{3}, T}} =
     PointCloud{T, Point}(points, Dict{Symbol, Any}())
 
+PointCloud(points::AbstractVector{V}) where {T, V <: AbstractVector{T}} =
+    PointCloud{T, Point{3, T}}(points, Dict{Symbol, Any}())
+
 immutable Triad <: AbstractGeometry{3, Float64}
     scale::Float64
     tube::Bool

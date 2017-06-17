@@ -4,7 +4,7 @@ module DrakeVisualizer
 
 using LCMCore
 using GeometryTypes
-import GeometryTypes: origin, radius
+import GeometryTypes: origin, radius, raw
 import Meshing
 import Rotations: Rotation, Quat
 import CoordinateTransformations: Transformation,
