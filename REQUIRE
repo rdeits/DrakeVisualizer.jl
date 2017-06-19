@@ -6,7 +6,7 @@ ColorTypes 0.2.0
 Meshing 0.0.3
 Rotations 0.2.0
 CoordinateTransformations 0.2.0
-StaticArrays 0.0.4
+StaticArrays 0.5
 DataStructures 0.4
 JSON 0.8
 CMakeWrapper 0.0.1
