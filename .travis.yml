@@ -20,7 +20,7 @@ matrix:
 
 script:
     - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-    - julia -e 'Pkg.clone(pwd())'
+    - julia -e 'Pkg.clone(pwd()); Pkg.build("DrakeVisualizer")'
     - julia -e 'Pkg.checkout("Meshing")'
     - julia -e 'Pkg.add("MeshIO"); Pkg.checkout("MeshIO")'
     - julia -e 'Pkg.test("DrakeVisualizer"; coverage=true)'
