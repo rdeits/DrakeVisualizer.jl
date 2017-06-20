@@ -6,21 +6,29 @@ sudo: required
 matrix:
   include:
     - os: linux
-      julia: 0.5
-    - os: linux
       julia: 0.6
     - os: linux
-      julia: 0.5
-      env: DIRECTOR_BUILD_FROM_SOURCE=1
+      julia: nightly
     - os: linux
       julia: 0.6
       env: DIRECTOR_BUILD_FROM_SOURCE=1
-    - os: osx
-      julia: 0.5
+    - os: linux
+      julia: nightly
+      env: DIRECTOR_BUILD_FROM_SOURCE=1
     - os: osx
       julia: 0.6
+
   allow_failures:
-    - julia: 0.6
+    - julia: nightly
+
+script:
+    - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+    - julia -e 'Pkg.clone(pwd()); Pkg.build("DrakeVisualizer")'
+    - julia -e 'Pkg.checkout("Meshing")'
+    - julia -e 'Pkg.add("MeshIO"); Pkg.checkout("MeshIO")'
+    - julia -e 'Pkg.add("Polyhedra"); Pkg.checkout("Polyhedra")'
+    - julia -e 'Pkg.add("CDDLib"); Pkg.checkout("CDDLib")'
+    - julia -e 'Pkg.test("DrakeVisualizer"; coverage=true)'
 
 notifications:
   email: false
