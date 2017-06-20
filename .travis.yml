@@ -18,6 +18,13 @@ matrix:
     - os: osx
       julia: 0.6
 
+script:
+    - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+    - julia -e 'Pkg.clone(pwd())'
+    - julia -e 'Pkg.checkout("Meshing")'
+    - julia -e 'Pkg.checkout("MeshIO")'
+    - julia -e 'Pkg.test("DrakeVisualizer"; coverage=true)'
+
 notifications:
   email: false
 branches:
