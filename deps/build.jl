@@ -18,7 +18,16 @@ director_sha = "1f69904c03b083e95035a2cd3070d59a942c9618"
     ]
 
     linux_distributor = strip(readstring(`lsb_release -i -s`))
-    linux_version = VersionNumber(strip(readstring(`lsb_release -r -s`)))
+    linux_version = try
+        VersionNumber(strip(readstring(`lsb_release -r -s`)))
+    catch e
+        if isa(e, ArgumentError)
+            v"0.0.0"
+        else
+            rethrow(e)
+        end
+    end
+
 
     if linux_distributor == "Ubuntu" || linux_distributor == "Debian"
         # The vtkPython libraries all have undeclared dependencies on libpython2.7,
