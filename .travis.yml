@@ -18,6 +18,9 @@ matrix:
     - os: osx
       julia: 0.6
 
+  allow_failures:
+    - julia: nightly
+
 script:
     - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
     - julia -e 'Pkg.clone(pwd()); Pkg.build("DrakeVisualizer")'
