@@ -23,6 +23,8 @@ script:
     - julia -e 'Pkg.clone(pwd()); Pkg.build("DrakeVisualizer")'
     - julia -e 'Pkg.checkout("Meshing")'
     - julia -e 'Pkg.add("MeshIO"); Pkg.checkout("MeshIO")'
+    - julia -e 'Pkg.add("Polyhedra"); Pkg.checkout("Polyhedra")'
+    - julia -e 'Pkg.add("CDDLib"); Pkg.checkout("CDDLib")'
     - julia -e 'Pkg.test("DrakeVisualizer"; coverage=true)'
 
 notifications:
