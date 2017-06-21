@@ -72,6 +72,8 @@ end
     setgeometry!(vis[:double_arrow], PolyLine([[-1, 0, 0.5], [-0.5, 0, 0.5]],
                                               end_head=ArrowHead(),
                                               start_head=ArrowHead()))
+
+    setgeometry!(vis[:basic_line], PolyLine([[0., 0, 0], [1., 0, 0]]))
 end
 
 
