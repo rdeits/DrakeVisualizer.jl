@@ -63,11 +63,11 @@ PolyLine(points::AbstractVector{Point}, radius, closed, start_head, end_head) wh
 PolyLine(points::AbstractVector{V}, args...) where {T, V <: AbstractVector{T}} = 
     PolyLine(convert.(Point{3, Float64}, points), args...)
 
-function PolyLine(points::AbstractVector;
+function PolyLine(points::AbstractVector{V};
     radius=0.0,
     closed=false,
     start_head=nothing,
-    end_head=nothing)
+    end_head=nothing) where {T, V <: AbstractVector{T}}
     PolyLine(points, radius, closed,
              start_head,
              end_head)
