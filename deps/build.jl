@@ -24,6 +24,7 @@ director_sha = "4109097ab03fe2728bf6ac9a9be1be952e449153"
     deps = [
         python = library_dependency("python", aliases=["libpython2.7.so",], validate=cflags_validator("python", "python2"))
         qt4 = library_dependency("QtCore", aliases=["libQtCore.so", "libQtCore.so.4.8"], depends=[python])
+        qt4_opengl = library_dependency("QtOpenGL", aliases=["libQtOpenGL.so", "libQtOpenGL.so.4.8"], depends=[qt4])
         director = library_dependency("ddApp", aliases=["libddApp"], depends=[python, qt4])
     ]
 
@@ -38,7 +39,7 @@ director_sha = "4109097ab03fe2728bf6ac9a9be1be952e449153"
         end
     end
 
-    provides(AptGet, Dict("libqt4-dev"=>qt4, "python-dev"=>python))
+    provides(AptGet, Dict("libqt4-dev"=>qt4, "libqt4-opengl-dev"=>qt4_opengl, "python-dev"=>python))
 
     force_source_build = lowercase(get(ENV, "DIRECTOR_BUILD_FROM_SOURCE", "")) in ["true", "1"]
 
