@@ -9,17 +9,6 @@ This package provides a Julia interface to the Drake Visualizer, part of the [Dr
 
 DrakeVisualizer.jl uses [BinDeps.jl](https://github.com/JuliaLang/BinDeps.jl) to try to automatically install an appropriate copy of Director for you. On Ubuntu (14.04 and higher) and macOS, this package will attempt to download the pre-built binaries of Director from <http://people.csail.mit.edu/patmarion/software/director/>. On other Linux platforms, it will compile Director from source. If you would like to force Director to build from source on any platform, just set the environment variable `DIRECTOR_BUILD_FROM_SOURCE=1`. 
 
-## Using Julia v0.6
-
-As of June 20, 2017, a few of DrakeVisualizer's dependencies have not yet released Julia v0.6-compatible versions, but they all have the necessary fixes available on their `master` branches. To get DrakeVisualizer working on v0.6, you may need to run:
-
-    julia> Pkg.checkout("Meshing")
-    julia> Pkg.add("MeshIO"); Pkg.checkout("MeshIO")
-    julia> Pkg.add("Polyhedra"); Pkg.checkout("Polyhedra")
-    julia> Pkg.add("CDDLib"); Pkg.checkout("CDDLib")
-
-These issues should be resolved within the next week. 
-
 ## Dependencies
 
 On Ubuntu (14.04 and up) and macOS, all of Director's dependencies will automatically be installed using BinDeps.jl. On other platforms, you'll need to provide them yourself. Director requires VTK5 with Qt4 and the python bindings. These packages are available via `apt-get` as:
