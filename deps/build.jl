@@ -25,7 +25,7 @@ director_sha = "4109097ab03fe2728bf6ac9a9be1be952e449153"
         python = library_dependency("python", aliases=["libpython2.7.so",], validate=cflags_validator("python", "python2"))
         qt4 = library_dependency("QtCore", aliases=["libQtCore.so", "libQtCore.so.4.8"], depends=[python])
         qt4_opengl = library_dependency("QtOpenGL", aliases=["libQtOpenGL.so", "libQtOpenGL.so.4.8"], depends=[qt4])
-        director = library_dependency("ddApp", aliases=["libddApp"], depends=[python, qt4])
+        director = library_dependency("ddApp", aliases=["libddApp"], depends=[python, qt4, qt4_opengl])
     ]
 
     linux_distributor = strip(readstring(`lsb_release -i -s`))
