@@ -80,8 +80,10 @@ director_sha = "4109097ab03fe2728bf6ac9a9be1be952e449153"
 
 
 elseif is_apple()
+    # Use the libvtkDRCFilters library instead of libddApp
+    # to work around weird segfault when dlclose()-ing libddApp
     deps = [
-        director = library_dependency("ddApp", aliases=["libddApp"])
+        director = library_dependency("vtkDRCFilters", aliases=["libvtkDRCFilters.dylib"])
     ]
     provides(BuildProcess, (@build_steps begin
         FileDownloader("http://people.csail.mit.edu/patmarion/software/director/releases/director-$(director_version)-mac.tar.gz",
