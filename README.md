@@ -11,11 +11,12 @@ DrakeVisualizer.jl uses [BinDeps.jl](https://github.com/JuliaLang/BinDeps.jl) to
 
 ## Dependencies
 
-On Ubuntu (14.04 and up) and macOS, all of Director's dependencies will automatically be installed using BinDeps.jl. On other platforms, you'll need to provide them yourself. Director requires VTK5 with Qt4 and the python bindings. These packages are available via `apt-get` as:
+On Ubuntu (14.04 and up) and macOS, all of Director's dependencies will automatically be installed using BinDeps.jl. On other platforms, you'll need to provide them yourself. The required packages are available via `apt-get` as:
 
-    libvtk5-qt4-dev
-    python-vtk
+    libqt4-dev
+    libqt4-opengl-dev
     python-numpy
+    python-dev
 
 On Arch Linux, you can install an appropriate version of VTK by running:
 
