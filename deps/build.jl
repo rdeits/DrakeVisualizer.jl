@@ -3,18 +3,29 @@ using CMakeWrapper
 
 @BinDeps.setup
 
+function cflags_validator(pkg_names...)
+    return (name, handle) -> begin
+        for pkg_name in pkg_names
+            try
+                run(`pkg-config --cflags $(pkg_name)`)
+                return true
+            catch ErrorException
+            end
+        end
+        false
+    end
+end
+
 basedir = dirname(@__FILE__)
-director_version = "0.1.0-35-g26aa674"
-director_sha = "1f69904c03b083e95035a2cd3070d59a942c9618"
+director_version = "0.1.0-130-g4109097" 
+director_sha = "4109097ab03fe2728bf6ac9a9be1be952e449153"
 
 @static if is_linux()
     deps = [
-        python = library_dependency("python", aliases=["libpython2.7.so", "libpython3.2.so", "libpython3.3.so", "libpython3.4.so", "libpython3.5.so", "libpython3.6.so", "libpython3.7.so"])
-        python_vtk = library_dependency("vtkCommon", aliases=["libvtkCommon.so", "libvtkCommon.so.5.8", "libvtkCommon.so.5.10"], depends=[python],
-            validate=(name, handle) -> begin
-                isfile(replace(name, r"vtkCommon", "vtkCommonPythonD", 1))
-            end)
-        director = library_dependency("ddApp", aliases=["libddApp"], depends=[python_vtk, python])
+        python = library_dependency("python", aliases=["libpython2.7.so",], validate=cflags_validator("python", "python2"))
+        qt4 = library_dependency("QtCore", aliases=["libQtCore.so", "libQtCore.so.4.8"], depends=[python])
+        qt4_opengl = library_dependency("QtOpenGL", aliases=["libQtOpenGL.so", "libQtOpenGL.so.4.8"], depends=[qt4])
+        director = library_dependency("ddApp", aliases=["libddApp"], depends=[python, qt4, qt4_opengl])
     ]
 
     linux_distributor = strip(readstring(`lsb_release -i -s`))
@@ -28,17 +39,7 @@ director_sha = "1f69904c03b083e95035a2cd3070d59a942c9618"
         end
     end
 
-
-    if linux_distributor == "Ubuntu" || linux_distributor == "Debian"
-        # The vtkPython libraries all have undeclared dependencies on libpython2.7,
-        # so they cannot be dlopen()ed without missing symbol errors. As a result,
-        # we can't use the regular library_dependency mechanism to look for vtk5
-        # and python-vtk. Instead, we combined both dependencies into "python_vtk"
-        # and make one build rule to apt-get install all the vtk-related packages.
-        provides(SimpleBuild,
-            () -> run(`sudo apt-get install libvtk5-qt4-dev python-vtk`),
-            python_vtk)
-    end
+    provides(AptGet, Dict("libqt4-dev"=>qt4, "libqt4-opengl-dev"=>qt4_opengl, "python-dev"=>python))
 
     force_source_build = lowercase(get(ENV, "DIRECTOR_BUILD_FROM_SOURCE", "")) in ["true", "1"]
 
@@ -58,7 +59,6 @@ director_sha = "1f69904c03b083e95035a2cd3070d59a942c9618"
     end
 
     if director_binary !== nothing
-        provides(AptGet, Dict("python2.7" => python))
         provides(BuildProcess, (@build_steps begin
             FileDownloader("http://people.csail.mit.edu/patmarion/software/director/releases/director-$(director_version)-$(director_binary).tar.gz",
                            joinpath(basedir, "downloads", "director.tar.gz"))
@@ -80,8 +80,10 @@ director_sha = "1f69904c03b083e95035a2cd3070d59a942c9618"
 
 
 elseif is_apple()
+    # Use the libvtkDRCFilters library instead of libddApp
+    # to work around weird segfault when dlclose()-ing libddApp
     deps = [
-        director = library_dependency("ddApp", aliases=["libddApp"])
+        director = library_dependency("vtkDRCFilters", aliases=["libvtkDRCFilters.dylib"])
     ]
     provides(BuildProcess, (@build_steps begin
         FileDownloader("http://people.csail.mit.edu/patmarion/software/director/releases/director-$(director_version)-mac.tar.gz",
