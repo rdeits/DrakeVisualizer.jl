@@ -87,3 +87,10 @@ end
     load!(vis, HyperCylinder{3, Float64}(1.0, 2.0))
     draw!(vis, IdentityTransformation())
 end
+
+@testset "addgeometry" begin
+    vis = Visualizer()
+    delete!(vis)
+    setgeometry!(vis[:box1], HyperRectangle(Vec(0., 0, 0), Vec(1., 1, 1)))
+    addgeometry!(vis[:box1], HyperSphere(Point(0., 0, 0), 1.0))
+end

@@ -82,10 +82,18 @@ function setgeometry!(vis::CoreVisualizer, path::AbstractVector, geoms::Abstract
     setgeometry!(vis, path)
 end
 
+function addgeometry!(vis::CoreVisualizer, path::AbstractVector, geoms::AbstractVector)
+    append!(vis.tree[path].data.geometries, geoms)
+    setgeometry!(vis, path)
+end
+
 setgeometry!(vis::CoreVisualizer, path::AbstractVector, geom) = setgeometry!(vis, path, [geom])
+addgeometry!(vis::CoreVisualizer, path::AbstractVector, geom) = addgeometry!(vis, path, [geom])
 
 setgeometry!(vis::CoreVisualizer, path::AbstractVector, geom::AbstractGeometry) =
     setgeometry!(vis, path, GeometryData(geom))
+addgeometry!(vis::CoreVisualizer, path::AbstractVector, geom::AbstractGeometry) =
+    addgeometry!(vis, path, GeometryData(geom))
 
 function settransform!(vis::CoreVisualizer, path::AbstractVector)
     push!(vis.queue.settransform, path)
@@ -157,6 +165,11 @@ end
 
 function setgeometry!(vis::Visualizer, geom)
     setgeometry!(vis.core, vis.path, geom)
+    vis
+end
+
+function addgeometry!(vis::Visualizer, geom)
+    addgeometry!(vis.core, vis.path, geom)
     vis
 end
 
