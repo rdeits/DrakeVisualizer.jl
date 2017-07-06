@@ -18,12 +18,6 @@ On Ubuntu (14.04 and up) and macOS, all of Director's dependencies will automati
     python-numpy
     python-dev
 
-On Arch Linux, you can install an appropriate version of VTK by running:
-
-	git clone https://aur.archlinux.org/vtk-multi-python.git
-	cd vtk-multi-python
-	makepkg -si
-
 # Troubleshooting
 
 If you have issues with the Director application itself (like your geometry not showing up), you may have an out-of-date version of the Director binaries. To clear the downloaded binaries, you can run:
