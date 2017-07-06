@@ -17,8 +17,8 @@ function cflags_validator(pkg_names...)
 end
 
 basedir = dirname(@__FILE__)
-director_version = "0.1.0-130-g4109097" 
-director_sha = "4109097ab03fe2728bf6ac9a9be1be952e449153"
+director_version = "0.1.0-144-g7ce9a5a" 
+director_sha = "7ce9a5aa02df24e320c63639b4cc36c77bfe6b65"
 
 @static if is_linux()
     deps = [
@@ -60,7 +60,7 @@ director_sha = "4109097ab03fe2728bf6ac9a9be1be952e449153"
 
     if director_binary !== nothing
         provides(BuildProcess, (@build_steps begin
-            FileDownloader("http://people.csail.mit.edu/patmarion/software/director/releases/director-$(director_version)-$(director_binary).tar.gz",
+            FileDownloader("https://dl.bintray.com/patmarion/director/director-$(director_version)-$(director_binary).tar.gz",
                            joinpath(basedir, "downloads", "director.tar.gz"))
             CreateDirectory(joinpath(basedir, "usr"))
             (`tar xzf $(joinpath(basedir, "downloads", "director.tar.gz")) --directory=usr --strip-components=1`)
@@ -86,7 +86,7 @@ elseif is_apple()
         director = library_dependency("vtkDRCFilters", aliases=["libvtkDRCFilters.dylib"])
     ]
     provides(BuildProcess, (@build_steps begin
-        FileDownloader("http://people.csail.mit.edu/patmarion/software/director/releases/director-$(director_version)-mac.tar.gz",
+        FileDownloader("https://dl.bintray.com/patmarion/director/director-$(director_version)-mac.tar.gz",
                        joinpath(basedir, "downloads", "director.tar.gz"))
         CreateDirectory(joinpath(basedir, "usr"))
         (`tar xzf $(joinpath(basedir, "downloads", "director.tar.gz")) --directory=usr --strip-components=1`)
