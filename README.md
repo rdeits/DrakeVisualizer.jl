@@ -71,7 +71,7 @@ Once a Visualizer model has been created, it can be rendered at arbitrary positi
 
 ```julia
 using CoordinateTransformations
-draw(model, [Translation(1.,0,0)])
+settransform!(model, Translation(1.0, 0.0, 0.0))
 ```
 
 DrakeVisualizer can also render mesh data:
@@ -89,7 +89,7 @@ And it can even generate 3D contours from functions:
 
 ```julia
 # First, we'll define our function:
-f = x -> sum(sin(5 * x))
+f = x -> sum(sin, 5 * x)
 
 # Then we pick a region of interest in which to sample the function.
 # This region starts at (-1, -1, -1) and extends to (1, 1, 1):
