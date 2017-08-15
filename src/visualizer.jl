@@ -2,7 +2,7 @@ using Base.Dates: Millisecond
 import Base: getindex, convert
 using .LazyTrees: LazyTree, data, children
 
-type GeometryData{G <: Union{AbstractGeometry, AbstractMesh}, C <: Colorant, T <: Transformation}
+mutable struct GeometryData{G <: Union{AbstractGeometry, AbstractMesh}, C <: Colorant, T <: Transformation}
     geometry::G
     color::C
     transform::T
@@ -11,9 +11,9 @@ end
 GeometryData(g, c::Colorant) = GeometryData(g, c, IdentityTransformation())
 GeometryData(g, t::Transformation) = GeometryData(g, RGBA(1, 0, 0, 0.5), t)
 
-convert{G <: GeometryData}(::Type{G}, g::Union{AbstractGeometry, AbstractMesh}) = GeometryData(g, RGBA(1, 0, 0, 0.5))
+convert(::Type{G}, g::Union{AbstractGeometry, AbstractMesh}) where {G <: GeometryData} = GeometryData(g, RGBA(1, 0, 0, 0.5))
 
-type VisData
+mutable struct VisData
     transform::Transformation
     geometries::Vector{GeometryData}
 end
@@ -22,7 +22,7 @@ VisData() = VisData(IdentityTransformation(), GeometryData[])
 
 const Path = Vector{Symbol}
 
-immutable CommandQueue
+struct CommandQueue
     delete::Set{Path}
     setgeometry::Set{Path}
     settransform::Set{Path}
@@ -40,7 +40,7 @@ end
 
 const VisTree = LazyTree{Symbol, VisData}
 
-type CoreVisualizer
+mutable struct CoreVisualizer
     lcm::LCM
     client_id::String
     tree::VisTree
@@ -148,7 +148,7 @@ function to_lcm(data::Associative)
         JSON.json(data))
 end
 
-immutable Visualizer
+struct Visualizer
     core::CoreVisualizer
     path::Vector{Symbol}
 

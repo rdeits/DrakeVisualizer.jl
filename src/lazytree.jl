@@ -6,7 +6,7 @@ using CoordinateTransformations: AffineMap
 using StaticArrays: SMatrix, SVector
 
 
-type LazyTree{K, T}
+mutable struct LazyTree{K, T}
     data::T
     children::Dict{K, LazyTree{K, T}}
 
@@ -39,7 +39,7 @@ end
 setindex!(t::LazyTree, child, path...) = setindex!(t, child, path)
 
 
-function getindex{T <: LazyTree}(t::T, childname)
+function getindex(t::T, childname) where T <: LazyTree
     if haskey(children(t), childname)
         children(t)[childname]
     else
@@ -56,9 +56,9 @@ function getindex(t::LazyTree{K}, path::Union{<:AbstractVector{K}, <:(NTuple{N, 
     t
 end
 
-getindex{K}(t::LazyTree{K}, path...) = getindex(t, path)
+getindex(t::LazyTree{K}, path...) where {K} = getindex(t, path)
 
-delete!{K}(t::LazyTree{K}, childname::K) = delete!(t.children, childname)
+delete!(t::LazyTree{K}, childname::K) where {K} = delete!(t.children, childname)
 function delete!(t::LazyTree, path::Union{Tuple, AbstractVector})
     if length(path) == 0
         for child in keys(children(t))
@@ -72,7 +72,7 @@ function delete!(t::LazyTree, path::Union{Tuple, AbstractVector})
     end
 end
 
-function descendants{K}(t::LazyTree{K}, prefix=K[])
+function descendants(t::LazyTree{K}, prefix=K[]) where K
     result = Vector{Vector{K}}()
     for (childname, child) in children(t)
         childpath = vcat(prefix, childname)

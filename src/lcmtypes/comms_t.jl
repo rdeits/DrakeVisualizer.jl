@@ -2,7 +2,7 @@ module Comms
 
 import LCMCore: encode, decode
 
-immutable CommsT
+struct CommsT
     utime::Int64
     format::String
     format_version_major::Int32
@@ -26,7 +26,7 @@ function encode(comms::CommsT)
     io.data
 end
 
-immutable FingerprintException <: Exception
+struct FingerprintException <: Exception
     message::String
 end
 
