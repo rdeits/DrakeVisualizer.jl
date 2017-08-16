@@ -67,7 +67,7 @@ serialize(v::Vector) = v
 serialize(v::Vec) = convert(Vector, v)
 serialize(v::Point) = convert(Vector, v)
 serialize(v::StaticArray) = convert(Vector, v)
-serialize{N, T}(face::Face{N, T}) = 
+serialize(face::Face{N, T}) where {N, T} = 
   raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face))
 serialize(g::HyperRectangle) = Dict("type" => "box", "lengths" => serialize(widths(g)))
 serialize(g::HyperSphere) = Dict("type" => "sphere", "radius" => radius(g))
