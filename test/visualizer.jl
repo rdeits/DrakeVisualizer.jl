@@ -94,3 +94,15 @@ end
     setgeometry!(vis[:box1], HyperRectangle(Vec(0., 0, 0), Vec(1., 1, 1)))
     addgeometry!(vis[:box1], HyperSphere(Point(0., 0, 0), 1.0))
 end
+
+@testset "script" begin
+    expected_file = joinpath(@__DIR__, "test_script_success")
+    isfile(expected_file) && rm(expected_file)
+    @test !isfile(expected_file)
+    scriptproc = DrakeVisualizer.new_window(script="testscript.py")
+    sleep(6.)
+    kill(scriptproc)
+    pass = isfile(expected_file)
+    pass && rm(expected_file)
+    @test pass
+end
