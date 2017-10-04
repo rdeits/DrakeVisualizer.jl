@@ -2,7 +2,6 @@ using DrakeVisualizer
 using GeometryTypes
 using CoordinateTransformations
 using Meshing
-using LCMCore
 using Base.Test
 import Iterators: product
 
