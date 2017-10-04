@@ -96,13 +96,20 @@ end
 end
 
 @testset "script" begin
-    expected_file = joinpath(@__DIR__, "test_script_success")
-    isfile(expected_file) && rm(expected_file)
-    @test !isfile(expected_file)
+    lcm = LCM()
+    received_message = Ref(false)
+    callback = function (channel, msg)
+        received_message[] = true
+        @test msg.format == "drake_visualizer_jl_test"
+        @test msg.format_version_major == 0
+        @test msg.format_version_minor == 1
+    end
+    subscribe(lcm, "DRAKE_VISUALIZER_JL_TEST", callback, DrakeVisualizer.Comms.CommsT)
+    @async while true
+        handle(lcm)
+    end
     scriptproc = DrakeVisualizer.new_window(script="testscript.py")
-    sleep(6.)
+    result = timedwait(() -> received_message[], 10.)
     kill(scriptproc)
-    pass = isfile(expected_file)
-    pass && rm(expected_file)
-    @test pass
+    @test result == :ok
 end
