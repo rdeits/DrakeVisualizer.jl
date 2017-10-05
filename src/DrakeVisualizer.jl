@@ -46,15 +46,17 @@ export GeometryData,
 
 const drake_visualizer_executable_name = "drake-visualizer"
 
-function new_window()
+function new_window(; script::Union{AbstractString, Void} = nothing)
     installed_visualizer_path = joinpath(dirname(@__FILE__), "..", "deps", "usr", "bin", "$drake_visualizer_executable_name")
-    if isfile(installed_visualizer_path)
+    drake_visualizer = if isfile(installed_visualizer_path)
         # If we built drake-visualizer, then use it
-        (stream, proc) = open(`$installed_visualizer_path`)
+        installed_visualizer_path
     else
         # Otherwise let the system try to find it
-        (stream, proc) = open(`$drake_visualizer_executable_name`)
+        drake_visualizer_executable_name
     end
+    command = script == nothing ? `$drake_visualizer` : `$drake_visualizer --script $script`
+    (stream, proc) = open(command)
     proc
 end
 
