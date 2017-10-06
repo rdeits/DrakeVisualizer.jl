@@ -56,8 +56,7 @@ function new_window(; script::Union{AbstractString, Void} = nothing)
         drake_visualizer_executable_name
     end
     command = script == nothing ? `$drake_visualizer` : `$drake_visualizer --script $script`
-    (stream, proc) = open(command)
-    proc
+    spawn(pipeline(command, stdout="out.txt", stderr="err.txt"))
 end
 
 function any_open_windows()
