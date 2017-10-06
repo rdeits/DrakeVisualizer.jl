@@ -94,3 +94,16 @@ end
     setgeometry!(vis[:box1], HyperRectangle(Vec(0., 0, 0), Vec(1., 1, 1)))
     addgeometry!(vis[:box1], HyperSphere(Point(0., 0, 0), 1.0))
 end
+
+if haskey(ENV, "DISPLAY") && (get(ENV, "TRAVIS", "false") == "false" || ENV["TRAVIS_OS_NAME"] == "linux")
+    @testset "script" begin
+        expected_file = joinpath(@__DIR__, "test_script_success")
+        isfile(expected_file) && rm(expected_file)
+        @test !isfile(expected_file)
+        scriptproc = DrakeVisualizer.new_window(script="testscript.py")
+        result = timedwait(() -> isfile(expected_file), 10.)
+        kill(scriptproc)
+        result == :ok && rm(expected_file)
+        @test result == :ok
+    end
+end
