@@ -17,8 +17,8 @@ function cflags_validator(pkg_names...)
 end
 
 basedir = dirname(@__FILE__)
-director_version = "0.1.0-144-g7ce9a5a" 
-director_sha = "7ce9a5aa02df24e320c63639b4cc36c77bfe6b65"
+director_version = "0.1.0-234-g74cea84"
+director_sha = "02c2ef65f8d1d9f3de1d56d129351cd43846d70b"
 
 @static if is_linux()
     deps = [
