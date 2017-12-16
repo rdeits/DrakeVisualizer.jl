@@ -38,12 +38,14 @@ addons:
     - python-scipy
     - python-yaml
 
+before_install:
+  # OSX deps:
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install numpy scipy libyaml; fi
+
 before_script:
   # https://lcm-proj.github.io/multicast_setup.html:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then sudo sysctl -w kern.ipc.maxsockbuf=2097152; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo sysctl -w net.core.rmem_max=2097152; fi
-  # OSX deps:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then pip install numpy scipy lxml PyYAML; fi
   # X virtual frame buffer:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16; fi
   - sleep 3

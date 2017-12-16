@@ -95,7 +95,7 @@ end
     addgeometry!(vis[:box1], HyperSphere(Point(0., 0, 0), 1.0))
 end
 
-if haskey(ENV, "DISPLAY") && (get(ENV, "TRAVIS", "false") == "false" || ENV["TRAVIS_OS_NAME"] == "linux")
+if haskey(ENV, "DISPLAY")
     @testset "script" begin
         expected_file = joinpath(@__DIR__, "test_script_success")
         isfile(expected_file) && rm(expected_file)
@@ -103,6 +103,11 @@ if haskey(ENV, "DISPLAY") && (get(ENV, "TRAVIS", "false") == "false" || ENV["TRA
         scriptproc = DrakeVisualizer.new_window(script="testscript.py")
         result = timedwait(() -> isfile(expected_file), 10.)
         kill(scriptproc)
+        println("out.txt:")
+        run(`cat out.txt`)
+        println()
+        println("err.txt:")
+        run(`cat err.txt`)
         result == :ok && rm(expected_file)
         @test result == :ok
     end
