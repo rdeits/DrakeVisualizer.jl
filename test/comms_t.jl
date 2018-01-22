@@ -9,7 +9,6 @@
         format,
         format_version_major,
         format_version_minor,
-        length(data),
         data)
     encoded = DrakeVisualizer.Comms.encode(msg)
     decoded = DrakeVisualizer.Comms.decode(encoded, DrakeVisualizer.Comms.CommsT)
