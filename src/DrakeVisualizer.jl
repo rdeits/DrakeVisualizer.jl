@@ -4,8 +4,10 @@ module DrakeVisualizer
 
 using LCMCore
 using GeometryTypes
+using FileIO
 import GeometryTypes: origin, radius, raw
 import Meshing
+import MeshIO
 import Rotations: Rotation, Quat
 import CoordinateTransformations: Transformation,
                                   transform_deriv,
@@ -29,6 +31,7 @@ export GeometryData,
         HyperCylinder,
         HyperSphere,
         HyperCube,
+        MeshFile,
         PointCloud,
         Point,
         Vec,

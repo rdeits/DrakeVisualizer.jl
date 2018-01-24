@@ -29,11 +29,15 @@ struct PointCloud{T, Point <: StaticArray{Tuple{3}, T}} <: AbstractGeometry{3, T
     channels::Dict{Symbol, Any}
 end
 
-PointCloud(points::AbstractVector{Point}) where {T, Point <: StaticArray{Tuple{3}, T}} =
-    PointCloud{T, Point}(points, Dict{Symbol, Any}())
+function PointCloud(points::AbstractVector{Point}, 
+                    channels::Dict=Dict{Symbol, Any}()) where {T, Point <: StaticArray{Tuple{3}, T}}
+    PointCloud{T, Point}(points, channels)
+end
 
-PointCloud(points::AbstractVector{V}) where {T, V <: AbstractVector{T}} =
-    PointCloud{T, Point{3, T}}(points, Dict{Symbol, Any}())
+function PointCloud(points::AbstractVector{V},
+                    channels::Dict=Dict{Symbol, Any}()) where {T, V <: AbstractVector{T}}
+    PointCloud{T, Point{3, T}}(points, channels)
+end
 
 struct Triad <: AbstractGeometry{3, Float64}
     scale::Float64
@@ -71,4 +75,21 @@ function PolyLine(points::AbstractVector{V};
     PolyLine(points, radius, closed,
              start_head,
              end_head)
+end
+
+"""
+A MeshFile is a wrapper around a mesh that indicates that the mesh should be
+transmitted to the viewer by saving its data to a file and sending that file's
+path to the viewer. This can avoid issues with very large meshes (which cannot
+otherwise be sent over LCM), but will not work if the viewer is not running
+locally.
+"""
+struct MeshFile <: AbstractGeometry{3, Float64}
+    filename::String
+end
+
+function MeshFile(mesh::AbstractMesh)
+    path = string(tempname(), ".ply")
+    save(path, mesh)
+    MeshFile(path)
 end

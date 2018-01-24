@@ -1,3 +1,5 @@
+using ColorTypes: RGB
+
 proc = DrakeVisualizer.new_window()
 
 @testset "open window" begin
@@ -74,6 +76,32 @@ end
                                               start_head=ArrowHead()))
 
     setgeometry!(vis[:basic_line], PolyLine([[0., 0, 0], [1., 0, 0]]))
+end
+
+@testset "pointcloud" begin
+    vis = Visualizer()
+    setgeometry!(vis[:pointcloud1],
+                 PointCloud([[0., 0, 0], [1., 0, 0]]))
+    setgeometry!(vis[:pointcloud2],
+                 PointCloud([Point(0., 0.5, 0), Point(1., 0.5, 0)]))
+    setgeometry!(vis[:pointcloud2_rgb],
+                 PointCloud([Point(0., 1., 0), Point(1., 1., 0)],
+                            Dict(:rgb=>[RGB(1., 1., 0.), RGB(1., 0., 1.)])))
+end
+
+@testset "mesh files" begin
+    vis = Visualizer()
+
+    @testset "existing mesh" begin
+        setgeometry!(vis[:mesh_file_existing], MeshFile(joinpath(Pkg.dir("GeometryTypes"), "test", "data", "cat.obj")))
+    end
+
+    @testset "new mesh" begin
+        f = x -> norm(x)^2
+        iso_level = 0.5
+        mesh = contour_mesh(f, [0.,0,0], [1.,1,1], iso_level)
+        setgeometry!(vis[:mesh_file], MeshFile(mesh))
+    end
 end
 
 

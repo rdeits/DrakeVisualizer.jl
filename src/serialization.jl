@@ -87,6 +87,12 @@ function serialize(g::AbstractMesh)
          "faces" => serialize.(faces(g)))
 end
 
+function serialize(f::MeshFile)
+    Dict("type" => "mesh_file",
+         "filename" => f.filename,
+         "scale" => SVector(1.0, 1.0, 1.0))
+end
+
 function serialize(g::PointCloud)
     params = Dict("type" => "pointcloud",
                   "points" => serialize.(g.points),
