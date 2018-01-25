@@ -140,12 +140,14 @@ function onresponse(vis::CoreVisualizer, msg)
 end
 
 function to_lcm(data::Associative)
+    jsondata = JSON.json(data)
     Comms.CommsT(
         data["utime"],
         "treeviewer_json",
         1,
         0,
-        JSON.json(data))
+        length(jsondata),
+        jsondata)
 end
 
 struct Visualizer
