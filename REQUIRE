@@ -1,5 +1,5 @@
 julia 0.6
-LCMCore 0.0.4
+LCMCore 0.1.0
 BinDeps 0.4.0
 GeometryTypes 0.4
 ColorTypes 0.2.0
