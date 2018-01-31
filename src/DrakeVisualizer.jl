@@ -2,7 +2,6 @@ __precompile__()
 
 module DrakeVisualizer
 
-using LCMCore
 using GeometryTypes
 using FileIO
 import GeometryTypes: origin, radius, raw
@@ -17,10 +16,11 @@ import CoordinateTransformations: Transformation,
                                   Translation,
                                   compose
 import ColorTypes: RGB, RGBA, Colorant, red, green, blue, alpha
-import StaticArrays: SVector, StaticArray, SMatrix
+import StaticArrays: SVector, StaticArray, SMatrix, StaticVector
 import Base: convert, length, show, isempty, empty!, delete!
 import DataStructures: OrderedDict
-import JSON
+import ZMQ
+import MsgPack
 
 export GeometryData,
         Link,

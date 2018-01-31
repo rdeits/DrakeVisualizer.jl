@@ -2,6 +2,9 @@ using Base.Dates: Millisecond
 import Base: getindex, convert
 using .LazyTrees: LazyTree, data, children
 
+const DEFAULT_PORT = 6891
+const DEFAULT_ZMQ_URL = "tcp://localhost:$DEFAULT_PORT"
+
 mutable struct GeometryData{G <: Union{AbstractGeometry, AbstractMesh}, C <: Colorant, T <: Transformation}
     geometry::G
     color::C
@@ -41,36 +44,39 @@ end
 const VisTree = LazyTree{Symbol, VisData}
 
 mutable struct CoreVisualizer
-    lcm::LCM
-    client_id::String
+    context::ZMQ.Context
+    socket::ZMQ.Socket
+    url::String
     tree::VisTree
     queue::CommandQueue
     publish_immediately::Bool
 
-    function CoreVisualizer(lcm::LCM=LCM())
-        client_id = "jl_$(Base.Random.randstring())"  # 10^14 possibilities
-        vis = new(lcm, client_id, VisTree(), CommandQueue(), true)
-        function handle_msg(channel, msg)
-            try
-                onresponse(vis, msg)
-            catch e
-                warn("""
-An error ocurred while handling the viewer response:
-    error: $e
-    response: $msg
-""")
-            end
-        end
-        sub = subscribe(lcm, response_channel(vis), handle_msg, Comms.CommsT)
-        @async while true
-            handle(lcm)
-        end
+    function CoreVisualizer(url)
+        context = ZMQ.Context()
+        socket = ZMQ.Socket(context, ZMQ.REQ)
+        ZMQ.connect(socket, url)
+        vis = new(context, socket, url, VisTree(), CommandQueue(), true)
+#         function handle_msg(channel, msg)
+#             try
+#                 onresponse(vis, msg)
+#             catch e
+#                 warn("""
+# An error ocurred while handling the viewer response:
+#     error: $e
+#     response: $msg
+# """)
+#             end
+#         end
+#         sub = subscribe(lcm, response_channel(vis), handle_msg, Comms.CommsT)
+#         @async while true
+#             handle(lcm)
+#         end
         vis
     end
 end
 
-request_channel(vis::CoreVisualizer) = "DIRECTOR_TREE_VIEWER_REQUEST_<$(vis.client_id)>"
-response_channel(vis::CoreVisualizer) = "DIRECTOR_TREE_VIEWER_RESPONSE_<$(vis.client_id)>"
+# request_channel(vis::CoreVisualizer) = "DIRECTOR_TREE_VIEWER_REQUEST_<$(vis.client_id)>"
+# response_channel(vis::CoreVisualizer) = "DIRECTOR_TREE_VIEWER_RESPONSE_<$(vis.client_id)>"
 
 function setgeometry!(vis::CoreVisualizer, path::AbstractVector)
     push!(vis.queue.setgeometry, path)
@@ -118,47 +124,49 @@ end
 function publish!(vis::CoreVisualizer)
     if !isempty(vis.queue)
         data = serialize(vis, vis.queue)
-        msg = to_lcm(data)
-        publish(vis.lcm, request_channel(vis), msg)
+        ZMQ.send(vis.socket, data)
+        println(ZMQ.recv(vis.socket))
+        # msg = to_lcm(data)
+        # publish(vis.lcm, request_channel(vis), msg)
         empty!(vis.queue)
     end
 end
 
-function onresponse(vis::CoreVisualizer, msg)
-    data = JSON.parse(IOBuffer(msg.data))
-    if data["status"] == 0
-        empty!(vis.queue)
-    elseif data["status"] == 1
-        for path in LazyTrees.descendants(vis.tree)
-            push!(vis.queue.setgeometry, path)
-            push!(vis.queue.settransform, path)
-        end
-        publish!(vis)
-    else
-        error("unhandled: $data")
-    end
-end
+# function onresponse(vis::CoreVisualizer, msg)
+#     data = JSON.parse(IOBuffer(msg.data))
+#     if data["status"] == 0
+#         empty!(vis.queue)
+#     elseif data["status"] == 1
+#         for path in LazyTrees.descendants(vis.tree)
+#             push!(vis.queue.setgeometry, path)
+#             push!(vis.queue.settransform, path)
+#         end
+#         publish!(vis)
+#     else
+#         error("unhandled: $data")
+#     end
+# end
 
-function to_lcm(data::Associative)
-    jsondata = JSON.json(data)
-    Comms.CommsT(
-        data["utime"],
-        "treeviewer_json",
-        1,
-        0,
-        length(jsondata),
-        jsondata)
-end
+# function to_lcm(data::Associative)
+#     jsondata = JSON.json(data)
+#     Comms.CommsT(
+#         data["utime"],
+#         "treeviewer_json",
+#         1,
+#         0,
+#         length(jsondata),
+#         jsondata)
+# end
 
 struct Visualizer
     core::CoreVisualizer
     path::Vector{Symbol}
 
-    Visualizer(lcm::LCM=LCM()) = new(CoreVisualizer(lcm), Symbol[])
+    Visualizer(url=DEFAULT_ZMQ_URL) = new(CoreVisualizer(url), Symbol[])
     Visualizer(core::CoreVisualizer, path::AbstractVector) = new(core, path)
 end
 
-show(io::IO, vis::Visualizer) = print(io, "Visualizer with path prefix $(vis.path) using LCM $(vis.core.lcm)")
+show(io::IO, vis::Visualizer) = print(io, "Visualizer with path prefix $(vis.path) using ZMQ URL $(vis.core.url)")
 
 function setgeometry!(vis::Visualizer)
     setgeometry!(vis.core, vis.path)
