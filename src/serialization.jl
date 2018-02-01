@@ -93,6 +93,11 @@ function msgpack_numpy_format(x::AbstractVector{C}, alpha=false) where {C <: Col
     msgpack_numpy_format(data)
 end
 
+function msgpack_numpy_format(x::AbstractVector{<:Face{N, T}}) where {N, T}
+    msgpack_numpy_format(
+        [raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face)) for face in faces])
+end
+
 # function serialize(path::AbstractVector, geomdatas::AbstractVector{<:GeometryData})
 #     params = serialize.(geomdatas)
 #     if length(params) == 1
@@ -104,30 +109,54 @@ end
 #     end
 # end
 
-function common_fields(g::GeometryData)
-    transform = compose(g.transform,
-                        intrinsic_transform(g.geometry))
-    ("color" => g.color, "transform" => transform)
-end
-
 pack(s::IO, v::StaticVector) = pack(s, Tuple(v))
 pack(s::IO, v::Symbol) = pack(s, String(v))
 pack(s::IO, c::Colorant) = pack(s, (red(c), green(c), blue(c), alpha(c)))
+pack(s::IO, tform::Transformation) = pack(s, Dict("translation" => translation(tform), "quaternion" => quaternion(tform)))
+pack(s::IO, g::GeometryData) = pack(s, Dict(vcat(geometry_fields(g.geometry), common_fields(g))))
 
-pack(s::IO, g::GeometryData{<:HyperRectangle}) =
-    pack(s, Dict("type" => "box", "lengths" => widths(g.geometry), common_fields(g)...))
+common_fields(g::GeometryData) = ["color" => g.color,
+                                  "transform" => compose(g.transform, intrinsic_transform(g.geometry))]
 
-pack(s::IO, g::GeometryData{<:HyperSphere}) =
-    pack(s, Dict("type" => "sphere", "radius" => radius(g.geometry), common_fields(g)...))
+geometry_fields(g::HyperRectangle) = ["type" => "box", "lengths" => widths(g)]
+geometry_fields(g::HyperSphere) = ["type" => "sphere", "radius" => radius(g)]
+geometry_fields(g::HyperEllipsoid) = ["type" => "ellipsoid", "radii" => radii(g)]
+geometry_fields(g::HyperCylinder{3}) = ["type" => "cylinder",
+                                       "length" => length(g),
+                                       "radius" => radius(g)]
+geometry_fields(g::HyperCube) = ["type" => "box", "lengths" => widths(g)]
+geometry_fields(g::Triad) = ["type" => "triad", "scale" => g.scale, "tube" => g.tube]
+geometry_fields(g::PointCloud) = ["type" => "pointcloud",
+                                  "points" => msgpack_numpy_format(g.points),
+                                  "channels" => Dict(
+                                    [(name => msgpack_numpy_format(value)) for (name, value) in g.channels])]
+geometry_fields(g::AbstractMesh) = ["type" => "mesh_data",
+                                    "vertices" => msgpack_numpy_format(vertices(g)),
+                                    "faces" => msgpack_numpy_format(faces(g))]
+geometry_fields(g::MeshFile) = ["type" => "mesh_file",
+                                "filename" => g.filename,
+                                "scale" => (1.0, 1.0, 1.0)]
 
-function pack(s::IO, g::GeometryData{<:PointCloud{T}}) where T
-    pack(s, Dict(
-        "type" => "pointcloud",
-        "points" => msgpack_numpy_format(reinterpret(T, g.geometry.points, (3, length(g.geometry.points)))),
-        "channels" => Dict(
-            [(name => msgpack_numpy_format(value)) for (name, value) in g.geometry.channels]),
-        common_fields(g)...))
+function geometry_fields(g::PolyLine)
+    params = ["type" => "line",
+              "points" => msgpack_numpy_format(g.points),
+              "radius" => g.radius,
+              "closed" => g.closed]
+    if !isnull(g.start_head)
+        append!(params, ["start_head" => true,
+                         "head_radius" => get(g.start_head).radius,
+                         "head_length" => get(g.start_head).length])
+    end
+    if !isnull(g.end_head)
+        append!(params, ["end_head" => true,
+                         "head_radius" => get(g.end_head).radius,
+                         "head_length" => get(g.end_head).length])
+    end
+    params
 end
+
+# Any unhandled geometries are converted to a mesh first
+geometry_fields(g::GeometryPrimitive) = geometry_fields(GLNormalMesh(g))
 
 intrinsic_transform(g) = IdentityTransformation()
 intrinsic_transform(g::Nullable) = isnull(g) ? IdentityTransformation() : intrinsic_transform(get(g))
@@ -138,19 +167,7 @@ intrinsic_transform(g::HyperEllipsoid) = Translation(center(g)...)
 intrinsic_transform(g::HyperCylinder) = Translation(center(g)...)
 intrinsic_transform(g::HyperCube) = Translation(center(g)...)
 
-function pack(s::IO, g::GeometryData{<:AbstractMesh})
-    pack(s, Dict(
-        "type" => "mesh_data",
-        "vertices" => vertices(g.geometry),
-        "faces" => faces(g.geometry),
-        common_fields(g)...))
-end
 
-function pack(s::IO, faces::Vector{<:Face{N, T}}) where {N, T}
-    pack(s,
-         msgpack_numpy_format(
-            [raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face)) for face in faces]))
-end
 
 # pack(s::IO, face::Face{N, T}) where {N, T} =
 #     pack(s, Tuple(raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face))))
@@ -224,12 +241,6 @@ end
 #                       "quaternion" => quaternion(tform))
 # end
 
-function pack(s::IO, tform::Transformation)
-    pack(s, Dict(
-        "translation" => translation(tform),
-        "quaternion" => quaternion(tform)
-        ))
-end
 
 quaternion(::IdentityTransformation) = SVector(1., 0, 0, 0)
 quaternion(tform::AbstractAffineMap) = quaternion(transform_deriv(tform, SVector(0., 0, 0)))
