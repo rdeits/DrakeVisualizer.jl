@@ -23,7 +23,7 @@ function serialize(vis::CoreVisualizer, queue::CommandQueue)
     end
     buf = IOBuffer()
     # write(buf, "treeviewer2.0 ")
-    pack(buf, 
+    pack(buf,
       Dict{String, Any}(
         "timestamp" => timestamp,
         "delete" => delete_cmds,
@@ -42,7 +42,7 @@ end
 
 function pack(s::IO, geompaths::Tuple{AbstractVector, AbstractVector{<:GeometryData}})
     path, geomdatas = geompaths
-    pack(s, 
+    pack(s,
         Dict(
              "path" => path,
              "geometries" => geomdatas
@@ -52,6 +52,8 @@ end
 
 numpy_dtype_str(::Type{Float64}) = "f8"
 numpy_dtype_str(::Type{Float32}) = "f4"
+numpy_dtype_str(::Type{Int64}) = "i8"
+numpy_dtype_str(::Type{Int32}) = "i4"
 
 """
 Pack arrays into the style expected by msgpack-numpy. Note that we reverse the
@@ -112,7 +114,7 @@ pack(s::IO, v::StaticVector) = pack(s, Tuple(v))
 pack(s::IO, v::Symbol) = pack(s, String(v))
 pack(s::IO, c::Colorant) = pack(s, (red(c), green(c), blue(c), alpha(c)))
 
-pack(s::IO, g::GeometryData{<:HyperRectangle}) = 
+pack(s::IO, g::GeometryData{<:HyperRectangle}) =
     pack(s, Dict("type" => "box", "lengths" => widths(g.geometry), common_fields(g)...))
 
 pack(s::IO, g::GeometryData{<:HyperSphere}) =
@@ -144,13 +146,13 @@ function pack(s::IO, g::GeometryData{<:AbstractMesh})
         common_fields(g)...))
 end
 
-function pack(s::IO, faces::AbstractVector{<:Face{N, T}}) where {N, T}
-    pack(s, 
+function pack(s::IO, faces::Vector{<:Face{N, T}}) where {N, T}
+    pack(s,
          msgpack_numpy_format(
             [raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face)) for face in faces]))
 end
 
-# pack(s::IO, face::Face{N, T}) where {N, T} = 
+# pack(s::IO, face::Face{N, T}) where {N, T} =
 #     pack(s, Tuple(raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face))))
 
 # serialize(color::Colorant) = (red(color),
@@ -162,7 +164,7 @@ end
 # serialize(v::Vec) = convert(Vector, v)
 # serialize(v::Point) = convert(Vector, v)
 # serialize(v::StaticArray) = convert(Vector, v)
-# serialize(face::Face{N, T}) where {N, T} = 
+# serialize(face::Face{N, T}) where {N, T} =
 #   raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face))
 # serialize(g::HyperRectangle) = Dict("type" => "box", "lengths" => serialize(widths(g)))
 # serialize(g::HyperSphere) = Dict("type" => "sphere", "radius" => radius(g))

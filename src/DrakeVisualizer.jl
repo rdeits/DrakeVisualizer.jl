@@ -102,7 +102,7 @@ function delete_director_binaries(skip_confirmation=false)
     end
 end
 
-include("lcmtypes/comms_t.jl")
+# include("lcmtypes/comms_t.jl")
 include("lazytree.jl")
 include("contour_meshes.jl")
 include("geometry_types.jl")
