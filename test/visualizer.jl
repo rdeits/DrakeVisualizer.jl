@@ -1,14 +1,5 @@
 using ColorTypes: RGB
 
-proc = DrakeVisualizer.new_window()
-
-@testset "open window" begin
-    if is_apple() || is_linux()
-        # @test DrakeVisualizer.any_open_windows() # doesn't pass when running headless
-        DrakeVisualizer.any_open_windows()
-    end
-end
-
 @testset "robot_load" begin
     f = x -> norm(x)^2 - 1
     bounds = HyperRectangle(Vec(0.,0,0), Vec(1.,1,1))
@@ -108,12 +99,6 @@ end
 @testset "destroy" begin
     vis = Visualizer(HyperCylinder{3, Float64}(1.0, 2.0))
     delete!(vis)
-end
-
-@testset "deprecations" begin
-    vis = Visualizer()
-    load!(vis, HyperCylinder{3, Float64}(1.0, 2.0))
-    draw!(vis, IdentityTransformation())
 end
 
 @testset "addgeometry" begin

@@ -93,21 +93,10 @@ function msgpack_numpy_format(x::AbstractVector{C}, alpha=false) where {C <: Col
     msgpack_numpy_format(data)
 end
 
-function msgpack_numpy_format(x::AbstractVector{<:Face{N, T}}) where {N, T}
+function msgpack_numpy_format(faces::AbstractVector{<:Face{N, T}}) where {N, T}
     msgpack_numpy_format(
-        [raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face)) for face in faces])
+        reinterpret(Int, [raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face)) for face in faces], (N, length(faces))))
 end
-
-# function serialize(path::AbstractVector, geomdatas::AbstractVector{<:GeometryData})
-#     params = serialize.(geomdatas)
-#     if length(params) == 1
-#         Dict("path" => serialize(path),
-#              "geometry" => params[1])
-#     else
-#         Dict("path" => serialize(path),
-#              "geometries" => params)
-#     end
-# end
 
 pack(s::IO, v::StaticVector) = pack(s, Tuple(v))
 pack(s::IO, v::Symbol) = pack(s, String(v))

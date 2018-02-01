@@ -2,9 +2,6 @@ using Base.Dates: Millisecond
 import Base: getindex, convert
 using .LazyTrees: LazyTree, data, children
 
-const DEFAULT_PORT = 6891
-const DEFAULT_ZMQ_URL = "tcp://localhost:$DEFAULT_PORT"
-
 mutable struct GeometryData{G <: Union{AbstractGeometry, AbstractMesh}, C <: Colorant, T <: Transformation}
     geometry::G
     color::C
@@ -50,27 +47,24 @@ mutable struct CoreVisualizer
     tree::VisTree
     queue::CommandQueue
     publish_immediately::Bool
+    window::Nullable{Window}
 
-    function CoreVisualizer(url)
+    function CoreVisualizer(;spawn=true, url=nothing, script=nothing)
+        if spawn
+            window = Nullable(Window(url=url, script=script))
+        else
+            window = Nullable{Window}()
+        end
+        if url === nothing
+            if !spawn
+                error("Please either specify a url to connect to or set `spawn=true` to start a new visualizer")
+            end
+            url = get(window).url
+        end
         context = ZMQ.Context()
         socket = ZMQ.Socket(context, ZMQ.REQ)
         ZMQ.connect(socket, url)
-        vis = new(context, socket, url, VisTree(), CommandQueue(), true)
-#         function handle_msg(channel, msg)
-#             try
-#                 onresponse(vis, msg)
-#             catch e
-#                 warn("""
-# An error ocurred while handling the viewer response:
-#     error: $e
-#     response: $msg
-# """)
-#             end
-#         end
-#         sub = subscribe(lcm, response_channel(vis), handle_msg, Comms.CommsT)
-#         @async while true
-#             handle(lcm)
-#         end
+        vis = new(context, socket, url, VisTree(), CommandQueue(), true, window)
         vis
     end
 end
@@ -125,7 +119,8 @@ function publish!(vis::CoreVisualizer)
     if !isempty(vis.queue)
         data = serialize(vis, vis.queue)
         ZMQ.send(vis.socket, data)
-        println(ZMQ.recv(vis.socket))
+        ZMQ.recv(vis.socket)
+        # println(unsafe_string(ZMQ.recv(vis.socket)))
         # msg = to_lcm(data)
         # publish(vis.lcm, request_channel(vis), msg)
         empty!(vis.queue)
@@ -162,7 +157,7 @@ struct Visualizer
     core::CoreVisualizer
     path::Vector{Symbol}
 
-    Visualizer(url=DEFAULT_ZMQ_URL) = new(CoreVisualizer(url), Symbol[])
+    Visualizer(;url=nothing, spawn=true) = new(CoreVisualizer(spawn=spawn, url=url), Symbol[])
     Visualizer(core::CoreVisualizer, path::AbstractVector) = new(core, path)
 end
 
@@ -205,10 +200,21 @@ function batch(func, vis::Visualizer)
 end
 
 # Old-style visualizer interface
-function Visualizer(geom::GeometryData)
-    vis = Visualizer()[:body1]
+function Visualizer(geom::GeometryData; kwargs...)
+    vis = Visualizer(;kwargs...)[:anonymous]
     setgeometry!(vis, geom)
     vis
 end
 
 Visualizer(geom::Union{AbstractGeometry, AbstractMesh}) = Visualizer(GeometryData(geom))
+
+Base.close(vis::Visualizer) = close(vis.core)
+
+function Base.close(core::CoreVisualizer)
+    if isnull(core.window)
+        warn("Visualizer has no attached window, so I cannot kill its window process")
+    else
+        kill(get(core.window).proc)
+    end
+    close(core.socket)
+end
