@@ -41,36 +41,15 @@ end
 const VisTree = LazyTree{Symbol, VisData}
 
 mutable struct CoreVisualizer
-    context::ZMQ.Context
-    socket::ZMQ.Socket
-    url::String
+    window::Window
     tree::VisTree
     queue::CommandQueue
     publish_immediately::Bool
-    window::Nullable{Window}
 
-    function CoreVisualizer(;spawn=true, url=nothing, script=nothing)
-        if spawn
-            window = Nullable(Window(url=url, script=script))
-        else
-            window = Nullable{Window}()
-        end
-        if url === nothing
-            if !spawn
-                error("Please either specify a url to connect to or set `spawn=true` to start a new visualizer")
-            end
-            url = get(window).url
-        end
-        context = ZMQ.Context()
-        socket = ZMQ.Socket(context, ZMQ.REQ)
-        ZMQ.connect(socket, url)
-        vis = new(context, socket, url, VisTree(), CommandQueue(), true, window)
-        vis
+    function CoreVisualizer(window::Window)
+        new(window, VisTree(), CommandQueue(), true)
     end
 end
-
-# request_channel(vis::CoreVisualizer) = "DIRECTOR_TREE_VIEWER_REQUEST_<$(vis.client_id)>"
-# response_channel(vis::CoreVisualizer) = "DIRECTOR_TREE_VIEWER_RESPONSE_<$(vis.client_id)>"
 
 function setgeometry!(vis::CoreVisualizer, path::AbstractVector)
     push!(vis.queue.setgeometry, path)
@@ -115,53 +94,53 @@ function delete!(vis::CoreVisualizer, path::AbstractVector)
     end
 end
 
-function publish!(vis::CoreVisualizer)
-    if !isempty(vis.queue)
-        data = serialize(vis, vis.queue)
-        ZMQ.send(vis.socket, data)
-        ZMQ.recv(vis.socket)
-        # println(unsafe_string(ZMQ.recv(vis.socket)))
-        # msg = to_lcm(data)
-        # publish(vis.lcm, request_channel(vis), msg)
-        empty!(vis.queue)
+const ZMQ_RECEIVE_TIMEOUT_S = 5
+
+function publish!(core::CoreVisualizer)
+    if !isempty(core.queue)
+        data = serialize(core, core.queue)
+
+        c = Channel{Bool}(1)
+        @async begin
+            ZMQ.send(core.window.socket, data)
+            ZMQ.recv(core.window.socket)
+            put!(c, true)
+        end
+        @async begin
+            sleep(ZMQ_RECEIVE_TIMEOUT_S)
+            put!(c, false)
+        end
+        success = take!(c)
+        if !success
+            close(core.window.socket)
+            close(core.window.context)
+            error("No response received from the visualizer. The ZMQ socket may no longer function, so it has been closed. You may want to close and re-launch the Visualizer.")
+        end
+        empty!(core.queue)
     end
 end
 
-# function onresponse(vis::CoreVisualizer, msg)
-#     data = JSON.parse(IOBuffer(msg.data))
-#     if data["status"] == 0
-#         empty!(vis.queue)
-#     elseif data["status"] == 1
-#         for path in LazyTrees.descendants(vis.tree)
-#             push!(vis.queue.setgeometry, path)
-#             push!(vis.queue.settransform, path)
-#         end
-#         publish!(vis)
-#     else
-#         error("unhandled: $data")
-#     end
-# end
-
-# function to_lcm(data::Associative)
-#     jsondata = JSON.json(data)
-#     Comms.CommsT(
-#         data["utime"],
-#         "treeviewer_json",
-#         1,
-#         0,
-#         length(jsondata),
-#         jsondata)
-# end
+function republish!(vis::CoreVisualizer)
+    for path in LazyTrees.descendants(vis.tree)
+        push!(vis.queue.setgeometry, path)
+        push!(vis.queue.settransform, path)
+    end
+    push!(vis.queue.setgeometry, [])
+    push!(vis.queue.settransform, [])
+    publish!(vis)
+end
 
 struct Visualizer
     core::CoreVisualizer
     path::Vector{Symbol}
 
-    Visualizer(;url=nothing, spawn=true) = new(CoreVisualizer(spawn=spawn, url=url), Symbol[])
+    function Visualizer(win=Window())
+        new(CoreVisualizer(win), Symbol[])
+    end
     Visualizer(core::CoreVisualizer, path::AbstractVector) = new(core, path)
 end
 
-show(io::IO, vis::Visualizer) = print(io, "Visualizer with path prefix $(vis.path) using ZMQ URL $(vis.core.url)")
+show(io::IO, vis::Visualizer) = print(io, "Visualizer with path prefix $(vis.path) attached to $(vis.core.window)")
 
 function setgeometry!(vis::Visualizer)
     setgeometry!(vis.core, vis.path)
@@ -199,22 +178,17 @@ function batch(func, vis::Visualizer)
     end
 end
 
+republish!(vis::Visualizer) = republish!(vis.core)
+
 # Old-style visualizer interface
-function Visualizer(geom::GeometryData; kwargs...)
-    vis = Visualizer(;kwargs...)[:anonymous]
+function Visualizer(geom::GeometryData, args...; kwargs...)
+    vis = Visualizer(args...; kwargs...)[:anonymous]
     setgeometry!(vis, geom)
     vis
 end
 
-Visualizer(geom::Union{AbstractGeometry, AbstractMesh}) = Visualizer(GeometryData(geom))
+Visualizer(geom::Union{AbstractGeometry, AbstractMesh}, args...; kwargs...) = Visualizer(GeometryData(geom), args...; kwargs...)
 
-Base.close(vis::Visualizer) = close(vis.core)
-
-function Base.close(core::CoreVisualizer)
-    if isnull(core.window)
-        warn("Visualizer has no attached window, so I cannot kill its window process")
-    else
-        kill(get(core.window).proc)
-    end
-    close(core.socket)
-end
+Base.close(vis::Visualizer) = close(vis.core.window)
+Base.open(vis::Visualizer) = open(vis.core.window)
+reconnect(vis::Visualizer) = reconnect(vis.core.window)

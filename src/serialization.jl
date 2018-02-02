@@ -33,13 +33,6 @@ function serialize(vis::CoreVisualizer, queue::CommandQueue)
     take!(buf)
 end
 
-# """
-# Fallback method. This is needed because we're going to overload packing
-# of Arrays to use the msgpack-numpy format, and we don't want to change
-# the behavior of MsgPack.pack on Arrays
-# """
-# _pack(s::IO, x) = MsgPack.pack(s, x)
-
 function pack(s::IO, geompaths::Tuple{AbstractVector, AbstractVector{<:GeometryData}})
     path, geomdatas = geompaths
     pack(s,
@@ -155,81 +148,6 @@ intrinsic_transform(g::HyperSphere) = Translation(center(g)...)
 intrinsic_transform(g::HyperEllipsoid) = Translation(center(g)...)
 intrinsic_transform(g::HyperCylinder) = Translation(center(g)...)
 intrinsic_transform(g::HyperCube) = Translation(center(g)...)
-
-
-
-# pack(s::IO, face::Face{N, T}) where {N, T} =
-#     pack(s, Tuple(raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face))))
-
-# serialize(color::Colorant) = (red(color),
-#                               green(color),
-#                               blue(color),
-#                               alpha(color))
-# serialize(p::Path) = string.(p)
-# serialize(v::Vector) = v
-# serialize(v::Vec) = convert(Vector, v)
-# serialize(v::Point) = convert(Vector, v)
-# serialize(v::StaticArray) = convert(Vector, v)
-# serialize(face::Face{N, T}) where {N, T} =
-#   raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face))
-# serialize(g::HyperRectangle) = Dict("type" => "box", "lengths" => serialize(widths(g)))
-# serialize(g::HyperSphere) = Dict("type" => "sphere", "radius" => radius(g))
-# serialize(g::HyperEllipsoid) = Dict("type" => "ellipsoid", "radii" => serialize(radii(g)))
-# serialize(g::HyperCylinder{3}) = Dict("type" => "cylinder",
-#                                       "length" => length(g),
-#                                       "radius" => radius(g))
-# serialize(g::HyperCube) = Dict("type" => "box", "lengths" => widths(g))
-# serialize(g::GeometryPrimitive) = serialize(GLNormalMesh(g))
-# serialize(g::Triad) = Dict{String, Any}("type" => "triad",
-#                                         "scale" => g.scale,
-#                                         "tube" => g.tube)
-
-# function serialize(g::AbstractMesh)
-#     Dict("type" => "mesh_data",
-#          "vertices" => serialize.(vertices(g)),
-#          "faces" => serialize.(faces(g)))
-# end
-
-# function serialize(f::MeshFile)
-#     Dict("type" => "mesh_file",
-#          "filename" => f.filename,
-#          "scale" => SVector(1.0, 1.0, 1.0))
-# end
-
-# function serialize(g::PointCloud)
-#     params = Dict("type" => "pointcloud",
-#                   "points" => serialize.(g.points),
-#                   "channels" => Dict{String, Any}())
-#     for (channel, values) in g.channels
-#         params["channels"][string(channel)] = serialize.(values)
-#     end
-#     params
-# end
-
-# function serialize(g::PolyLine)
-#     params = Dict("type" => "line",
-#                   "points" => serialize.(g.points),
-#                   "radius" => g.radius,
-#                   "closed" => g.closed
-#         )
-#     if !isnull(g.start_head)
-#         params["start_head"] = true
-#         params["head_radius"] = get(g.start_head).radius
-#         params["head_length"] = get(g.start_head).length
-#     end
-#     if !isnull(g.end_head)
-#         params["end_head"] = true
-#         params["head_radius"] = get(g.end_head).radius
-#         params["head_length"] = get(g.end_head).length
-#     end
-#     params
-# end
-
-# function serialize(tform::Transformation)
-#     Dict{String, Vector{Float64}}("translation" => translation(tform),
-#                       "quaternion" => quaternion(tform))
-# end
-
 
 quaternion(::IdentityTransformation) = SVector(1., 0, 0, 0)
 quaternion(tform::AbstractAffineMap) = quaternion(transform_deriv(tform, SVector(0., 0, 0)))

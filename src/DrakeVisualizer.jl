@@ -26,6 +26,7 @@ export GeometryData,
         Link,
         Robot,
         Visualizer,
+        Window,
         HyperRectangle,
         HyperEllipsoid,
         HyperCylinder,
@@ -42,6 +43,7 @@ export GeometryData,
         settransform!,
         setgeometry!,
         addgeometry!,
+        republish!,
         load!,
         draw!,
         delete!,
@@ -50,10 +52,11 @@ export GeometryData,
 const drake_visualizer_executable_name = "drake-visualizer"
 
 function new_window(args...; kw...)
-    error("The function new_window() has been removed in the process of simplifying the connection between the visualizer and its window. Calling `Visualizer()` will now automatically launch a window which will respond only to that visualizer's commands.")
+    error("The function new_window() has been removed in the process of simplifying the connection between the visualizer and its window. Calling `Visualizer()` will now automatically launch a window which will respond only to that visualizer's commands, or you can call DrakeVisualizer.Window() to manually launch a window.")
 end
 
 function any_open_windows()
+    warn("This function is deprecated and will be removed in a future version. It should no longer be necessary now that the window process is explicitly wrapped by the `Window` type.")
     @static if is_apple()
         return success(spawn(`pgrep $drake_visualizer_executable_name`))
     elseif is_linux()
@@ -64,10 +67,34 @@ function any_open_windows()
     end
 end
 
-struct Window
+mutable struct Window
     url::String
-    proc::Base.Process
+    script::Union{String, Void}
+    stream::Union{Pipe, Void}
+    proc::Union{Base.Process, Void}
+    context::ZMQ.Context
+    socket::ZMQ.Socket
+
+
+    function Window(;url=nothing, script=nothing, launch=true)
+        if url === nothing
+            host = "127.0.0.1"
+            port = find_available_port(host)
+            url = "tcp://$host:$port"
+        end
+
+        window = new(url, script, nothing, nothing)
+        if launch
+            open(window)
+        else
+            connect(window)
+        end
+        finalizer(window, disconnect)
+        window
+    end
 end
+
+Base.show(io::IO, win::Window) = print(io, "Window using ZMQ URL $(win.url)")
 
 const DEFAULT_PORT = 53730
 const NUM_PORTS_TO_TRY = 256
@@ -88,7 +115,7 @@ function find_available_port(host)
     error("Could not find an available port from $DEFAULT_PORT to $(DEFAULT_PORT + 255)")
 end
 
-function Window(;url=nothing, script=nothing)
+function launch_command(url, script)
     # installed_visualizer_path = joinpath(dirname(@__FILE__), "..", "deps", "usr", "bin", "$drake_visualizer_executable_name")
     installed_visualizer_path = "/home/rdeits/locomotion/director/build/install/bin/drake-visualizer"
     drake_visualizer = if isfile(installed_visualizer_path)
@@ -101,18 +128,39 @@ function Window(;url=nothing, script=nothing)
     if script === nothing
         command = `$drake_visualizer`
     else
-        command = `$drake_visualizer --script $script`
+        command = `$drake_visualizer --script $(script)`
     end
+    return `$command --treeviewer-url=$(url)`
+end
 
-    if url === nothing
-        host = "127.0.0.1"
-        port = find_available_port(host)
-        url = "tcp://$host:$port"
-    end
+function Base.connect(win::Window)
+    win.context = ZMQ.Context()
+    win.socket = ZMQ.Socket(win.context, ZMQ.REQ)
+    ZMQ.connect(win.socket, win.url)
+end
 
-    command = `$command --treeviewer-url=$url`
-    (stream, proc) = open(command)
-    Window(url, proc)
+function disconnect(win::Window)
+    close(win.socket)
+    close(win.context)
+end
+
+function Base.open(win::Window)
+    cmd = launch_command(win.url, win.script)
+    win.stream, win.proc = open(cmd)
+    connect(win)
+end
+
+function reconnect(win::Window)
+    disconnect(win)
+    connect(win)
+end
+
+function Base.close(win::Window)
+    disconnect(win)
+    (win.proc === nothing) || kill(win.proc)
+    (win.stream === nothing) || close(win.stream)
+    win.proc = nothing
+    win.stream = nothing
 end
 
 function delete_director_binaries(skip_confirmation=false)
