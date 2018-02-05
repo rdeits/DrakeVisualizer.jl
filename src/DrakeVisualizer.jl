@@ -130,7 +130,7 @@ function launch_command(url, script)
     else
         command = `$drake_visualizer --script $(script)`
     end
-    return `$command --treeviewer-url=$(url)`
+    return `$command --no-drakevisualizer-lcm --no-treeviewer-lcm --no-lcmgl-renderer --treeviewer-url=$(url)`
 end
 
 function Base.connect(win::Window)
