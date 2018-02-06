@@ -53,41 +53,35 @@ Pack arrays into the style expected by msgpack-numpy. Note that we reverse the
 order of the sizes because numpy will interpret the data as row-major instead
 of column-major.
 """
-function msgpack_numpy_format(x::AbstractArray)
-    Dict(
-         "nd" => true,
-         "type" => numpy_dtype_str(eltype(x)),
-         "shape" => reverse(size(x)),
-         "data" => reinterpret(UInt8, x, (length(x) * sizeof(eltype(x)),))
-        )
+struct MsgPackNumpyArray{A <: AbstractArray}
+    data::A
 end
+
+function pack(s::IO, a::MsgPackNumpyArray)
+    # TODO: this is inefficient because we have to create a new IOBuffer
+    # to pack the data into, and then we pack that buffer into the Ext.
+    raw_data = reinterpret(UInt8, a.data, (length(a.data) * sizeof(eltype(a.data)),)) 
+    pack(s, MsgPack.Ext(0x50, MsgPack.pack(Dict(
+             "nd" => true,
+             "type" => numpy_dtype_str(eltype(a.data)),
+             "shape" => reverse(size(a.data)),
+             "data" => raw_data
+            ))))
+end
+
+msgpack_numpy_format(x::AbstractArray) = MsgPackNumpyArray(x)
 
 function msgpack_numpy_format(x::AbstractVector{<:StaticVector{N, T}}) where {N, T}
-    msgpack_numpy_format(reinterpret(T, x, (N, length(x))))
+    MsgPackNumpyArray(reinterpret(T, x, (N, length(x))))
 end
 
-function msgpack_numpy_format(x::AbstractVector{C}, alpha=false) where {C <: Colorant}
-    if alpha
-        data = Array{eltype(C)}(4, length(x))
-        for i in 1:length(x)
-            data[1, i] = red(x[i])
-            data[2, i] = green(x[i])
-            data[3, i] = blue(x[i])
-            data[4, i] = alpha(x[i])
-        end
-    else
-        data = Array{eltype(C)}(3, length(x))
-        for i in 1:length(x)
-            data[1, i] = red(x[i])
-            data[2, i] = green(x[i])
-            data[3, i] = blue(x[i])
-        end
-    end
-    msgpack_numpy_format(data)
+function msgpack_numpy_format(x::AbstractVector{Cin}, ::Type{Cout}=RGB{Float32}) where {Cin <: Colorant, Cout <: Colorant}
+    xout = convert(Vector{Cout}, x)
+    MsgPackNumpyArray(reinterpret(eltype(Cout), x, (length(Cout), length(x))))
 end
 
 function msgpack_numpy_format(faces::AbstractVector{<:Face{N, T}}) where {N, T}
-    msgpack_numpy_format(
+    MsgPackNumpyArray(
         reinterpret(Int, [raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face)) for face in faces], (N, length(faces))))
 end
 
