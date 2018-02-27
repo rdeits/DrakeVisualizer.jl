@@ -6,7 +6,7 @@ using LCMCore
 using GeometryTypes
 using FileIO
 import GeometryTypes: origin, radius, raw
-import Meshing
+using Meshing: MarchingTetrahedra, MarchingCubes
 import MeshIO
 import Rotations: Rotation, Quat
 import CoordinateTransformations: Transformation,
