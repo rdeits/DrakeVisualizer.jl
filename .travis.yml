@@ -24,7 +24,7 @@ matrix:
 addons:
   apt:
     packages:
-    # https://stackoverflow.com/a/34549360:
+    # https://stackoverflow.com/a/34549360
     - xorg
     - xvfb
     - dbus-x11
