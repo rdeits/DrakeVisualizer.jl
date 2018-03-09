@@ -2,25 +2,14 @@ function contour_mesh(f::Function,
                       bounds::HyperRectangle,
                       isosurface_value::Number=0.0,
                       resolution::Real=maximum(widths(bounds))/20.0)
+    
     # Extract an isosurface from a vector-input function in 3 dimensions and
-    # return it as a mesh. This function mostly exists to work around bugs in
-    # Meshing.jl: specifically its weird handling of non-zero isosurfaces
-    # and its incorrect mesh point scaling:
-    # https://github.com/JuliaGeometry/GeometryTypes.jl/issues/49
+    # return it as a mesh.
     window_width = widths(bounds)
-    sdf = SignedDistanceField(x -> f(SVector{3, Float64}(x[1], x[2], x[3])) - isosurface_value,
+    sdf = SignedDistanceField(x -> f(SVector{3, Float64}(x[1], x[2], x[3])),
                               bounds,
                               resolution)
-
-    # We've already accounted for the isosurface value in the construction of
-    # the SDF, so we set the iso value here to 0.
-    mesh = HomogenousMesh(sdf, 0.0)
-
-    # Rescale the mesh points and then construct a new mesh using the rescaled
-    # points and the original faces.
-    lb = minimum(bounds)
-    rescaled_points = Point{3,Float64}[Vec(v-1) ./ (Vec(size(sdf))-1) .* window_width .+ lb for v in vertices(mesh)]
-    HomogenousMesh(rescaled_points, mesh.faces)
+    mesh = HomogenousMesh(sdf, MarchingTetrahedra(isosurface_value))
 end
 
 contour_mesh(f::Function,
