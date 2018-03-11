@@ -51,6 +51,7 @@ before_script:
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia -e 'Pkg.clone(pwd()); Pkg.build("DrakeVisualizer")'
+  - julia -e 'Pkg.checkout("LCMCore"); Pkg.build("LCMCore")'
   # use xvfb on Linux:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then xvfb-run -a -s "-screen 0 1024x768x24" -e /dev/stdout julia -e 'Pkg.test("DrakeVisualizer"; coverage=true)'; fi
   # just run regularly on OSX:
