@@ -15,8 +15,8 @@ function CommsT(utime::Integer, format::String, format_version_major::Integer, f
     CommsT(utime, format, format_version_major, format_version_minor, length(data), data)
 end
 
-@lcmtypesetup(CommsT, 
-    (data, 1) => num_bytes
+@lcmtypesetup(CommsT,
+    data => (num_bytes, )
 )
 
 end
