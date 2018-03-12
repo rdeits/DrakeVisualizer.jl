@@ -6,7 +6,7 @@ using LCMCore
 using GeometryTypes
 using FileIO
 import GeometryTypes: origin, radius, raw
-import Meshing
+import Meshing: MarchingTetrahedra
 import MeshIO
 import Rotations: Rotation, Quat
 import CoordinateTransformations: Transformation,
@@ -108,8 +108,5 @@ include("contour_meshes.jl")
 include("geometry_types.jl")
 include("visualizer.jl")
 include("serialization.jl")
-
-@deprecate load!(args...) setgeometry!(args...)
-@deprecate draw!(args...) settransform!(args...)
 
 end

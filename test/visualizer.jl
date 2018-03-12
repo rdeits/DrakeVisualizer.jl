@@ -110,12 +110,6 @@ end
     delete!(vis)
 end
 
-@testset "deprecations" begin
-    vis = Visualizer()
-    load!(vis, HyperCylinder{3, Float64}(1.0, 2.0))
-    draw!(vis, IdentityTransformation())
-end
-
 @testset "addgeometry" begin
     vis = Visualizer()
     delete!(vis)
