@@ -11,12 +11,12 @@ mutable struct CommsT <: LCMType
     data::Vector{UInt8}
 end
 
-function CommsT(utime::Integer, format::String, format_version_major::Integer, format_version_minor::Integer, data::Vector{UInt8})
-    CommsT(utime, format, format_version_major, format_version_minor, length(data), data)
-end
-
 @lcmtypesetup(CommsT,
     data => (num_bytes, )
 )
+
+function CommsT(utime::Integer, format::String, format_version_major::Integer, format_version_minor::Integer, data::Vector{UInt8})
+    CommsT(utime, format, format_version_major, format_version_minor, length(data), data)
+end
 
 end
