@@ -8,12 +8,13 @@ using FileIO
 import GeometryTypes: origin, radius, raw
 import Meshing: MarchingTetrahedra
 import MeshIO
-import Rotations: Rotation, Quat
+import Rotations: Rotation, Quat, rotation_between
 import CoordinateTransformations: Transformation,
                                   transform_deriv,
                                   IdentityTransformation,
                                   AbstractAffineMap,
                                   AffineMap,
+                                  LinearMap,
                                   Translation,
                                   compose
 import ColorTypes: RGB, RGBA, Colorant, red, green, blue, alpha
@@ -28,7 +29,7 @@ export GeometryData,
         Visualizer,
         HyperRectangle,
         HyperEllipsoid,
-        HyperCylinder,
+        Cylinder,
         HyperSphere,
         HyperCube,
         MeshFile,
@@ -45,7 +46,9 @@ export GeometryData,
         load!,
         draw!,
         delete!,
-        batch
+        batch,
+        # deprecated:
+        HyperCylinder
 
 const drake_visualizer_executable_name = "drake-visualizer"
 
