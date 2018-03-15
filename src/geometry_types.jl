@@ -8,20 +8,12 @@ origin(geometry::HyperEllipsoid{N, T}) where {N, T} = geometry.center
 radii(geometry::HyperEllipsoid{N, T}) where {N, T} = geometry.radii
 center(geometry::HyperEllipsoid) = origin(geometry)
 
-mutable struct HyperCylinder{N, T} <: GeometryPrimitive{N, T}
-    length::T # along last axis
-    radius::T
-    # origin is at center
-end
-
-length(geometry::HyperCylinder) = geometry.length
-radius(geometry::HyperCylinder) = geometry.radius
-origin(geometry::HyperCylinder{N, T}) where {N, T} = zeros(SVector{N, T})
-center(g::HyperCylinder) = origin(g)
+@deprecate HyperCylinder(length::T, radius) where {T} Cylinder{3, T}(Point(0., 0., 0.), Point(0, 0, length), radius)
 
 center(geometry::HyperRectangle) = minimum(geometry) + 0.5 * widths(geometry)
 center(geometry::HyperCube) = minimum(geometry) + 0.5 * widths(geometry)
 center(geometry::HyperSphere) = origin(geometry)
+center(geometry::Cylinder) = origin(geometry) + geometry.extremity / 2
 
 
 struct PointCloud{T, Point <: StaticArray{Tuple{3}, T}} <: AbstractGeometry{3, T}

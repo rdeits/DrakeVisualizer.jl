@@ -58,8 +58,13 @@ end
     Visualizer(ellipsoid)
 end
 
+@testset "deprecated cylinder" begin
+    cylinder = DrakeVisualizer.HyperCylinder(1.0, 0.5)
+    Visualizer(cylinder)
+end
+
 @testset "cylinder" begin
-    cylinder = DrakeVisualizer.HyperCylinder{3, Float64}(1.0, 0.5)
+    cylinder = Cylinder(Point(0., 0, 0), Point(0., 0, 1), 0.5)
     Visualizer(cylinder)
 end
 
@@ -106,7 +111,7 @@ end
 
 
 @testset "destroy" begin
-    vis = Visualizer(HyperCylinder{3, Float64}(1.0, 2.0))
+    vis = Visualizer(Cylinder(Point(0., 0, 0), Point(0., 0, 1), 2.0))
     delete!(vis)
 end
 

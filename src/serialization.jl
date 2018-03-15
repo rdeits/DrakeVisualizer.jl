@@ -55,8 +55,12 @@ intrinsic_transform(geomdata::GeometryData) = intrinsic_transform(geomdata.geome
 intrinsic_transform(g::HyperRectangle) = Translation(center(g)...)
 intrinsic_transform(g::HyperSphere) = Translation(center(g)...)
 intrinsic_transform(g::HyperEllipsoid) = Translation(center(g)...)
-intrinsic_transform(g::HyperCylinder) = Translation(center(g)...)
 intrinsic_transform(g::HyperCube) = Translation(center(g)...)
+function intrinsic_transform(g::Cylinder{3})
+    # DrakeVisualizer wants a cylinder to lie along the z axis
+    R = rotation_between(SVector(0, 0, 1), g.extremity)
+    Translation(center(g)) ∘ LinearMap(R)
+end
 
 serialize(color::Colorant) = (red(color),
                               green(color),
@@ -72,8 +76,8 @@ serialize(face::Face{N, T}) where {N, T} =
 serialize(g::HyperRectangle) = Dict("type" => "box", "lengths" => serialize(widths(g)))
 serialize(g::HyperSphere) = Dict("type" => "sphere", "radius" => radius(g))
 serialize(g::HyperEllipsoid) = Dict("type" => "ellipsoid", "radii" => serialize(radii(g)))
-serialize(g::HyperCylinder{3}) = Dict("type" => "cylinder",
-                                      "length" => length(g),
+serialize(g::Cylinder{3}) = Dict("type" => "cylinder",
+                                      "length" => norm(g.extremity),
                                       "radius" => radius(g))
 serialize(g::HyperCube) = Dict("type" => "box", "lengths" => widths(g))
 serialize(g::GeometryPrimitive) = serialize(GLNormalMesh(g))
