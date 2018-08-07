@@ -26,6 +26,7 @@ data(t::LazyTree) = t.data
 
 convert(::Type{LazyTree{K, T}}, x::T) where {K, T} = LazyTree{K, T}(x)
 convert(::Type{<:LazyTree{K, T}}, x) where {K, T} = LazyTree{K, T}(convert(T, x))
+convert(::Type{LT}, x::LT) where {LT<:LazyTree} = x
 
 setindex!(t::LazyTree, child, childname) = t.children[childname] = child
 

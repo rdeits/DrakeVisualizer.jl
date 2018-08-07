@@ -49,8 +49,8 @@ struct PolyLine{T, Point <: StaticArray{Tuple{3}, T}} <: AbstractGeometry{3, T}
     points::Vector{Point}
     radius::Float64
     closed::Bool
-    start_head::Nullable{ArrowHead}
-    end_head::Nullable{ArrowHead}
+    start_head::Union{ArrowHead, Nothing}
+    end_head::Union{ArrowHead, Nothing}
 end
 
 PolyLine(points::AbstractVector{Point}, radius, closed, start_head, end_head) where {T, Point <: StaticArray{Tuple{3}, T}} =

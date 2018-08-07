@@ -2,6 +2,7 @@ __precompile__()
 
 module DrakeVisualizer
 
+using Compat
 using LCMCore
 using GeometryTypes
 using FileIO

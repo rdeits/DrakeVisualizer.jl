@@ -12,3 +12,4 @@ StaticArrays 0.5
 DataStructures 0.4
 JSON 0.8
 CMakeWrapper 0.0.2
+Compat 1.0.0
