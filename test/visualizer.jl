@@ -59,11 +59,6 @@ end
     Visualizer(ellipsoid)
 end
 
-@testset "deprecated cylinder" begin
-    cylinder = DrakeVisualizer.HyperCylinder(1.0, 0.5)
-    Visualizer(cylinder)
-end
-
 @testset "cylinder" begin
     cylinder = Cylinder(Point(0., 0, 0), Point(0., 0, 1), 0.5)
     Visualizer(cylinder)

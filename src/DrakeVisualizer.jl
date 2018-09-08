@@ -48,9 +48,7 @@ export GeometryData,
         load!,
         draw!,
         delete!,
-        batch,
-        # deprecated:
-        HyperCylinder
+        batch
 
 const drake_visualizer_executable_name = "drake-visualizer"
 
