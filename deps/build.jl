@@ -20,7 +20,7 @@ end
 Director's libraries are unversioned, so there's no possible way
 to know if a system-installed version of Director is compatible
 with this interface. Instead, we have to restrict ourselves to
-only versions of Director which are built locally. 
+only versions of Director which are built locally.
 """
 function is_local_build(name, handle)
     startswith(relpath(name, @__DIR__), "usr/")
@@ -31,7 +31,7 @@ basedir = dirname(@__FILE__)
 director_version = "0.1.0-234-g74cea84"
 director_sha = "02c2ef65f8d1d9f3de1d56d129351cd43846d70b"
 
-@static if is_linux()
+@static if Sys.islinux()
     deps = [
         python = library_dependency("python", aliases=["libpython2.7.so",], validate=cflags_validator("python", "python2"))
         qt4 = library_dependency("QtCore", aliases=["libQtCore.so", "libQtCore.so.4.8"], depends=[python])
@@ -90,7 +90,7 @@ director_sha = "02c2ef65f8d1d9f3de1d56d129351cd43846d70b"
     end
 
 
-elseif is_apple()
+elseif Sys.isapple()
     # Use the libvtkDRCFilters library instead of libddApp
     # to work around weird segfault when dlclose()-ing libddApp
     deps = [

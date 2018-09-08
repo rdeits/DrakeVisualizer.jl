@@ -6,17 +6,18 @@ sudo: required
 matrix:
   include:
     - os: linux
-      julia: 0.6
+      julia: 0.7
+    - os: linux
+      julia: 1.0
     - os: linux
       julia: nightly
     - os: linux
-      julia: 0.6
-      env: DIRECTOR_BUILD_FROM_SOURCE=1
-    - os: linux
-      julia: nightly
+      julia: 1.0
       env: DIRECTOR_BUILD_FROM_SOURCE=1
     - os: osx
-      julia: 0.6
+      julia: 0.7
+    - os: osx
+      julia: 1.0
 
   allow_failures:
     - julia: nightly
@@ -61,4 +62,4 @@ notifications:
 branches:
   only: master
 after_success:
-  - julia -e 'cd(Pkg.dir("DrakeVisualizer")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
