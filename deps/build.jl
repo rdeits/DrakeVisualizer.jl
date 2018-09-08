@@ -37,9 +37,9 @@ director_sha = "02c2ef65f8d1d9f3de1d56d129351cd43846d70b"
     qt4_opengl = library_dependency("QtOpenGL", aliases=["libQtOpenGL.so", "libQtOpenGL.so.4.8"], depends=[qt4])
     director = library_dependency("ddApp", aliases=["libddApp"], depends=[python, qt4, qt4_opengl], validate=is_local_build)
 
-    linux_distributor = strip(readstring(`lsb_release -i -s`))
+    linux_distributor = strip(read(`lsb_release -i -s`, String))
     linux_version = try
-        VersionNumber(strip(readstring(`lsb_release -r -s`)))
+        VersionNumber(strip(read(`lsb_release -r -s`, String)))
     catch e
         if isa(e, ArgumentError)
             v"0.0.0"
