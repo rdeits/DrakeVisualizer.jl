@@ -3,11 +3,13 @@
 [![Build Status](https://travis-ci.org/rdeits/DrakeVisualizer.jl.svg?branch=master)](https://travis-ci.org/rdeits/DrakeVisualizer.jl)
 [![codecov](https://codecov.io/gh/rdeits/DrakeVisualizer.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/rdeits/DrakeVisualizer.jl)
 
+**Note:** While this package should still work, active development has been moved to [MeshCat.jl](https://github.com/rdeits/MeshCat.jl) which offers a similar set of features and a much less complicated set of dependencies.
+
 This package provides a Julia interface to the Drake Visualizer, part of the [Drake](http://drake.mit.edu) project and built on top of [Director](https://github.com/RobotLocomotion/director), a highly customizable 3D interface for robotics visualization and interaction.
 
 # Installation
 
-DrakeVisualizer.jl uses [BinDeps.jl](https://github.com/JuliaLang/BinDeps.jl) to try to automatically install an appropriate copy of Director for you. On Ubuntu (14.04 and higher) and macOS, this package will attempt to download the pre-built binaries of Director from <http://people.csail.mit.edu/patmarion/software/director/>. On other Linux platforms, it will compile Director from source. If you would like to force Director to build from source on any platform, just set the environment variable `DIRECTOR_BUILD_FROM_SOURCE=1`. 
+DrakeVisualizer.jl uses [BinDeps.jl](https://github.com/JuliaLang/BinDeps.jl) to try to automatically install an appropriate copy of Director for you. On Ubuntu (14.04 and higher) and macOS, this package will attempt to download the pre-built binaries of Director from <http://people.csail.mit.edu/patmarion/software/director/>. On other Linux platforms, it will compile Director from source. If you would like to force Director to build from source on any platform, just set the environment variable `DIRECTOR_BUILD_FROM_SOURCE=1`.
 
 ## Dependencies
 
