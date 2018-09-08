@@ -1,4 +1,5 @@
-using Base.Dates: Millisecond
+using Dates: Millisecond
+using Random: randstring
 import Base: getindex, convert
 using .LazyTrees: LazyTree, data, children
 
@@ -11,7 +12,9 @@ end
 GeometryData(g, c::Colorant) = GeometryData(g, c, IdentityTransformation())
 GeometryData(g, t::Transformation) = GeometryData(g, RGBA(1, 0, 0, 0.5), t)
 
-convert(::Type{G}, g::Union{AbstractGeometry, AbstractMesh}) where {G <: GeometryData} = GeometryData(g, RGBA(1, 0, 0, 0.5))
+GeometryData(g::Union{AbstractGeometry, AbstractMesh}) =
+    GeometryData(g, RGBA(1, 0, 0, 0.5))
+# convert(::Type{G}, g::Union{AbstractGeometry, AbstractMesh}) where {G <: GeometryData} = GeometryData(g, RGBA(1, 0, 0, 0.5))
 
 mutable struct VisData
     transform::Transformation
@@ -48,7 +51,7 @@ mutable struct CoreVisualizer
     publish_immediately::Bool
 
     function CoreVisualizer(lcm::LCM=LCM())
-        client_id = "jl_$(Base.Random.randstring())"  # 10^14 possibilities
+        client_id = "jl_$(randstring())"  # 10^14 possibilities
         vis = new(lcm, client_id, VisTree(), CommandQueue(), true)
         function handle_msg(channel, msg)
             try
@@ -139,7 +142,7 @@ function onresponse(vis::CoreVisualizer, msg)
     end
 end
 
-function to_lcm(data::Associative)
+function to_lcm(data::AbstractDict)
     jsondata = JSON.json(data)
     Comms.CommsT(
         data["utime"],
@@ -147,7 +150,7 @@ function to_lcm(data::Associative)
         1,
         0,
         length(jsondata),
-        jsondata)
+        codeunits(jsondata))
 end
 
 struct Visualizer

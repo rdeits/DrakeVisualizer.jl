@@ -6,17 +6,18 @@ sudo: required
 matrix:
   include:
     - os: linux
-      julia: 0.6
+      julia: 0.7
+    - os: linux
+      julia: 1.0
     - os: linux
       julia: nightly
     - os: linux
-      julia: 0.6
-      env: DIRECTOR_BUILD_FROM_SOURCE=1
-    - os: linux
-      julia: nightly
+      julia: 1.0
       env: DIRECTOR_BUILD_FROM_SOURCE=1
     - os: osx
-      julia: 0.6
+      julia: 0.7
+    - os: osx
+      julia: 1.0
 
   allow_failures:
     - julia: nightly
@@ -50,15 +51,15 @@ before_script:
 
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("DrakeVisualizer")'
+  - julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("DrakeVisualizer")'
   # use xvfb on Linux:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then xvfb-run -a -s "-screen 0 1024x768x24" -e /dev/stdout julia -e 'Pkg.test("DrakeVisualizer"; coverage=true)'; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then xvfb-run -a -s "-screen 0 1024x768x24" -e /dev/stdout julia -e 'using Pkg; Pkg.test("DrakeVisualizer"; coverage=true)'; fi
   # just run regularly on OSX:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then julia -e 'Pkg.test("DrakeVisualizer"; coverage=true)'; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then julia -e 'using Pkg; Pkg.test("DrakeVisualizer"; coverage=true)'; fi
 
 notifications:
   email: false
 branches:
   only: master
 after_success:
-  - julia -e 'cd(Pkg.dir("DrakeVisualizer")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'

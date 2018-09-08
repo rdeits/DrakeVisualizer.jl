@@ -1,9 +1,10 @@
 using ColorTypes: RGB
+import GeometryTypes
 
 proc = DrakeVisualizer.new_window()
 
 @testset "open window" begin
-    if is_apple() || is_linux()
+    if Sys.isapple() || Sys.islinux()
         # @test DrakeVisualizer.any_open_windows() # doesn't pass when running headless
         DrakeVisualizer.any_open_windows()
     end
@@ -33,7 +34,7 @@ end
     end
 
     function set_link_transforms(joint_angles)
-        transforms = Array{Transformation}(length(link_lengths))
+        transforms = Array{Transformation}(undef, length(link_lengths))
         transforms[1] = LinearMap(AngleAxis(joint_angles[1], 0, 0, 1.0))
         for i = 2:length(link_lengths)
             T = compose(Translation(link_lengths[i-1], 0, 0),
@@ -48,7 +49,7 @@ end
         end
     end
 
-    for x in product([linspace(-pi, pi, 11) for i in 1:length(link_lengths)]...)
+    for x in product([range(-pi, stop=pi, length=11) for i in 1:length(link_lengths)]...)
         set_link_transforms(reverse(x))
     end
 end
@@ -56,11 +57,6 @@ end
 @testset "ellipsoid" begin
     ellipsoid = DrakeVisualizer.HyperEllipsoid(Point(1.,0,0.1), Vec(0.3, 0.2, 0.1))
     Visualizer(ellipsoid)
-end
-
-@testset "deprecated cylinder" begin
-    cylinder = DrakeVisualizer.HyperCylinder(1.0, 0.5)
-    Visualizer(cylinder)
 end
 
 @testset "cylinder" begin
@@ -94,11 +90,13 @@ end
                             Dict(:rgb=>[RGB(1., 1., 0.), RGB(1., 0., 1.)])))
 end
 
+const cat_mesh_path = joinpath(dirname(pathof(GeometryTypes)), "..", "test", "data", "cat.obj")
+
 @testset "mesh files" begin
     vis = Visualizer()
 
     @testset "existing mesh" begin
-        setgeometry!(vis[:mesh_file_existing], MeshFile(joinpath(Pkg.dir("GeometryTypes"), "test", "data", "cat.obj")))
+        setgeometry!(vis[:mesh_file_existing], MeshFile(cat_mesh_path))
     end
 
     @testset "new mesh" begin

@@ -8,8 +8,6 @@ origin(geometry::HyperEllipsoid{N, T}) where {N, T} = geometry.center
 radii(geometry::HyperEllipsoid{N, T}) where {N, T} = geometry.radii
 center(geometry::HyperEllipsoid) = origin(geometry)
 
-@deprecate HyperCylinder(length::T, radius) where {T} Cylinder{3, T}(Point(0., 0., 0.), Point(0, 0, length), radius)
-
 center(geometry::HyperRectangle) = minimum(geometry) + 0.5 * widths(geometry)
 center(geometry::HyperCube) = minimum(geometry) + 0.5 * widths(geometry)
 center(geometry::HyperSphere) = origin(geometry)
@@ -21,7 +19,7 @@ struct PointCloud{T, Point <: StaticArray{Tuple{3}, T}} <: AbstractGeometry{3, T
     channels::Dict{Symbol, Any}
 end
 
-function PointCloud(points::AbstractVector{Point}, 
+function PointCloud(points::AbstractVector{Point},
                     channels::Dict=Dict{Symbol, Any}()) where {T, Point <: StaticArray{Tuple{3}, T}}
     PointCloud{T, Point}(points, channels)
 end
@@ -49,14 +47,14 @@ struct PolyLine{T, Point <: StaticArray{Tuple{3}, T}} <: AbstractGeometry{3, T}
     points::Vector{Point}
     radius::Float64
     closed::Bool
-    start_head::Nullable{ArrowHead}
-    end_head::Nullable{ArrowHead}
+    start_head::Union{ArrowHead, Nothing}
+    end_head::Union{ArrowHead, Nothing}
 end
 
 PolyLine(points::AbstractVector{Point}, radius, closed, start_head, end_head) where {T, Point <: StaticArray{Tuple{3}, T}} =
     PolyLine{T, Point}(points, radius, closed, start_head, end_head)
 
-PolyLine(points::AbstractVector{V}, args...) where {T, V <: AbstractVector{T}} = 
+PolyLine(points::AbstractVector{V}, args...) where {T, V <: AbstractVector{T}} =
     PolyLine(convert.(Point{3, Float64}, points), args...)
 
 function PolyLine(points::AbstractVector{V};
