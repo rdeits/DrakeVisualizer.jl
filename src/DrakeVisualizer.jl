@@ -3,23 +3,27 @@ module DrakeVisualizer
 using LCMCore
 using GeometryTypes
 using FileIO
-import GeometryTypes: origin, radius, raw
-import Meshing: MarchingTetrahedra
+using LinearAlgebra
+
 import MeshIO
-import Rotations: Rotation, Quat, rotation_between
-import CoordinateTransformations: Transformation,
-                                  transform_deriv,
-                                  IdentityTransformation,
-                                  AbstractAffineMap,
-                                  AffineMap,
-                                  LinearMap,
-                                  Translation,
-                                  compose
-import ColorTypes: RGB, RGBA, Colorant, red, green, blue, alpha
-import StaticArrays: SVector, StaticArray, SMatrix
-import Base: convert, length, show, isempty, empty!, delete!
-import DataStructures: OrderedDict
 import JSON
+
+using Meshing: MarchingTetrahedra
+using Rotations: Rotation, Quat, rotation_between
+using CoordinateTransformations: Transformation,
+                                 transform_deriv,
+                                 IdentityTransformation,
+                                 AbstractAffineMap,
+                                 AffineMap,
+                                 LinearMap,
+                                 Translation,
+                                 compose
+using ColorTypes: RGB, RGBA, Colorant, red, green, blue, alpha
+using StaticArrays: SVector, StaticArray, SMatrix
+using DataStructures: OrderedDict
+
+import GeometryTypes: origin, radius, raw
+import Base: convert, length, show, isempty, empty!, delete!
 
 export GeometryData,
         Link,
@@ -50,7 +54,7 @@ export GeometryData,
 
 const drake_visualizer_executable_name = "drake-visualizer"
 
-function new_window(; script::Union{AbstractString, Void} = nothing)
+function new_window(; script::Union{AbstractString, Nothing} = nothing)
     installed_visualizer_path = joinpath(dirname(@__FILE__), "..", "deps", "usr", "bin", "$drake_visualizer_executable_name")
     drake_visualizer = if isfile(installed_visualizer_path)
         # If we built drake-visualizer, then use it
@@ -60,15 +64,15 @@ function new_window(; script::Union{AbstractString, Void} = nothing)
         drake_visualizer_executable_name
     end
     command = script == nothing ? `$drake_visualizer` : `$drake_visualizer --script $script`
-    (stream, proc) = open(command)
+    proc = open(command)
     proc
 end
 
 function any_open_windows()
-    @static if is_apple()
-        return success(spawn(`pgrep $drake_visualizer_executable_name`))
-    elseif is_linux()
-        return success(spawn(`pgrep -f $drake_visualizer_executable_name`))
+    @static if Sys.isapple()
+        return success(`pgrep $drake_visualizer_executable_name`)
+    elseif Sys.islinux()
+        return success(`pgrep -f $drake_visualizer_executable_name`)
     else
         warn("DrakeVisualizer.any_open_windows not implemented for $(Sys.KERNEL). This function will always return false.")
         return false
@@ -90,7 +94,7 @@ function delete_director_binaries(skip_confirmation=false)
         for path in binary_paths
             println(path)
         end
-        print("After doing this, you will need to run 'Pkg.build(\"DrakeVisualizer\")'. Proceed? (y/n) ")
+        print("After doing this, you will need to run 'using Pkg; Pkg.build(\"DrakeVisualizer\")'. Proceed? (y/n) ")
         choice = chomp(readline())
         if lowercase(choice[1]) != 'y'
             println("Canceled.")

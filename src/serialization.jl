@@ -70,7 +70,7 @@ serialize(v::Vector) = v
 serialize(v::Vec) = convert(Vector, v)
 serialize(v::Point) = convert(Vector, v)
 serialize(v::StaticArray) = convert(Vector, v)
-serialize(face::Face{N, T}) where {N, T} = 
+serialize(face::Face{N, T}) where {N, T} =
   raw.(convert(Face{N, GeometryTypes.OffsetInteger{-1, Int}}, face))
 serialize(g::HyperRectangle) = Dict("type" => "box", "lengths" => serialize(widths(g)))
 serialize(g::HyperSphere) = Dict("type" => "sphere", "radius" => radius(g))
@@ -112,15 +112,15 @@ function serialize(g::PolyLine)
                   "radius" => g.radius,
                   "closed" => g.closed
         )
-    if !isnull(g.start_head)
+    if g.start_head !== nothing
         params["start_head"] = true
-        params["head_radius"] = get(g.start_head).radius
-        params["head_length"] = get(g.start_head).length
+        params["head_radius"] = g.start_head.radius
+        params["head_length"] = g.start_head.length
     end
-    if !isnull(g.end_head)
+    if g.end_head !== nothing
         params["end_head"] = true
-        params["head_radius"] = get(g.end_head).radius
-        params["head_length"] = get(g.end_head).length
+        params["head_radius"] = g.end_head.radius
+        params["head_length"] = g.end_head.length
     end
     params
 end

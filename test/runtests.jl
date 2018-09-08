@@ -2,8 +2,9 @@ using DrakeVisualizer
 using GeometryTypes
 using CoordinateTransformations
 using Meshing
-using Base.Test
-import Iterators: product
+using Test
+using Base.Iterators: product
+using LinearAlgebra
 
 include("lazytree.jl")
 include("comms_t.jl")
