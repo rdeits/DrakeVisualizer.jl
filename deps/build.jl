@@ -32,12 +32,10 @@ director_version = "0.1.0-234-g74cea84"
 director_sha = "02c2ef65f8d1d9f3de1d56d129351cd43846d70b"
 
 @static if Sys.islinux()
-    deps = [
-        python = library_dependency("python", aliases=["libpython2.7.so",], validate=cflags_validator("python", "python2"))
-        qt4 = library_dependency("QtCore", aliases=["libQtCore.so", "libQtCore.so.4.8"], depends=[python])
-        qt4_opengl = library_dependency("QtOpenGL", aliases=["libQtOpenGL.so", "libQtOpenGL.so.4.8"], depends=[qt4])
-        director = library_dependency("ddApp", aliases=["libddApp"], depends=[python, qt4, qt4_opengl], validate=is_local_build)
-    ]
+    python = library_dependency("python", aliases=["libpython2.7.so",], validate=cflags_validator("python", "python2"))
+    qt4 = library_dependency("QtCore", aliases=["libQtCore.so", "libQtCore.so.4.8"], depends=[python])
+    qt4_opengl = library_dependency("QtOpenGL", aliases=["libQtOpenGL.so", "libQtOpenGL.so.4.8"], depends=[qt4])
+    director = library_dependency("ddApp", aliases=["libddApp"], depends=[python, qt4, qt4_opengl], validate=is_local_build)
 
     linux_distributor = strip(readstring(`lsb_release -i -s`))
     linux_version = try
@@ -93,9 +91,7 @@ director_sha = "02c2ef65f8d1d9f3de1d56d129351cd43846d70b"
 elseif Sys.isapple()
     # Use the libvtkDRCFilters library instead of libddApp
     # to work around weird segfault when dlclose()-ing libddApp
-    deps = [
-        director = library_dependency("vtkDRCFilters", aliases=["libvtkDRCFilters.dylib"], validate=is_local_build)
-    ]
+    director = library_dependency("vtkDRCFilters", aliases=["libvtkDRCFilters.dylib"], validate=is_local_build)
     provides(BuildProcess, (@build_steps begin
         FileDownloader("https://dl.bintray.com/patmarion/director/director-$(director_version)-mac.tar.gz",
                        joinpath(basedir, "downloads", "director.tar.gz"))
