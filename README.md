@@ -5,7 +5,7 @@
 
 ---
 
-**Note:** While this package should still work, active development has been moved to [MeshCat.jl](https://github.com/rdeits/MeshCat.jl) which offers more features and a much less complicated set of dependencies.
+**Note:** While this package should still work, active development has been moved to [MeshCat.jl](https://github.com/rdeits/MeshCat.jl), which offers more features and a much less complicated set of dependencies.
 
 ---
 
