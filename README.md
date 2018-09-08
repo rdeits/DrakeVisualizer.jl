@@ -3,7 +3,11 @@
 [![Build Status](https://travis-ci.org/rdeits/DrakeVisualizer.jl.svg?branch=master)](https://travis-ci.org/rdeits/DrakeVisualizer.jl)
 [![codecov](https://codecov.io/gh/rdeits/DrakeVisualizer.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/rdeits/DrakeVisualizer.jl)
 
-**Note:** While this package should still work, active development has been moved to [MeshCat.jl](https://github.com/rdeits/MeshCat.jl) which offers a similar set of features and a much less complicated set of dependencies.
+---
+
+**Note:** While this package should still work, active development has been moved to [MeshCat.jl](https://github.com/rdeits/MeshCat.jl) which offers more features and a much less complicated set of dependencies.
+
+---
 
 This package provides a Julia interface to the Drake Visualizer, part of the [Drake](http://drake.mit.edu) project and built on top of [Director](https://github.com/RobotLocomotion/director), a highly customizable 3D interface for robotics visualization and interaction.
 
