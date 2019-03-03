@@ -5,7 +5,11 @@
 
 ---
 
-**Note:** While this package should still work, active development has been moved to [MeshCat.jl](https://github.com/rdeits/MeshCat.jl), which offers more features and a much less complicated set of dependencies.
+## Status: Retired
+
+This package is no longer under active maintenance, as of March 2019. Everything here should continue to work with all current and future Julia 1.x versions, but there is no further work planned on this package.
+
+Instead, active development has moved to [MeshCat.jl](https://github.com/rdeits/MeshCat.jl), which offers a similar API but with more features, better performance, and fewer binary dependencies.
 
 ---
 
