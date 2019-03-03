@@ -2,10 +2,10 @@ module DrakeVisualizer
 
 using LCMCore
 using GeometryTypes
-using FileIO
 using LinearAlgebra
-
 import MeshIO
+using FileIO: load, save
+
 import JSON
 
 using Meshing: MarchingTetrahedra
