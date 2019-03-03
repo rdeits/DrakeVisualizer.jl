@@ -7,20 +7,21 @@ matrix:
   include:
     - os: linux
       julia: 0.7
+      env: TESTCMD="xvfb-run julia"
     - os: linux
       julia: 1.0
+      env: TESTCMD="xvfb-run julia"
     - os: linux
-      julia: nightly
+    - julia: 1.1
+      env: TESTCMD="xvfb-run julia"
     - os: linux
-      julia: 1.0
+      julia: 1.1
       env: DIRECTOR_BUILD_FROM_SOURCE=1
+      env: TESTCMD="xvfb-run julia"
     - os: osx
       julia: 0.7
     - os: osx
-      julia: 1.0
-
-  allow_failures:
-    - julia: nightly
+      julia: 1.1
 
 addons:
   apt:
@@ -50,16 +51,12 @@ before_script:
   - sleep 3
 
 script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("DrakeVisualizer")'
-  # use xvfb on Linux:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then xvfb-run -a -s "-screen 0 1024x768x24" -e /dev/stdout julia -e 'using Pkg; Pkg.test("DrakeVisualizer"; coverage=true)'; fi
-  # just run regularly on OSX:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then julia -e 'using Pkg; Pkg.test("DrakeVisualizer"; coverage=true)'; fi
+  - julia --color=yes -e "using Pkg; if VERSION >= v\"1.1.0-rc1\"; Pkg.build(verbose=true); else Pkg.build(); end"
+  - $TESTCMD --check-bounds=yes --color=yes -e 'using Pkg; Pkg.test("MeshCat", coverage=true)'
 
 notifications:
   email: false
 branches:
   only: master
 after_success:
-  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+  - julia -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
