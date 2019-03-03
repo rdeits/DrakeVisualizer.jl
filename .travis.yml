@@ -40,6 +40,7 @@ addons:
       - python-yaml
       - mesa-utils
       - libgl1-mesa-glx
+      - libgl1-mesa-dev
 
 before_script:
   # https://lcm-proj.github.io/multicast_setup.html:
