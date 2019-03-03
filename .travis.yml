@@ -36,6 +36,8 @@ addons:
       - python-numpy
       - python-scipy
       - python-yaml
+      - mesa-utils
+      - libgl1-mesa-glx
 
 before_script:
   # https://lcm-proj.github.io/multicast_setup.html:
