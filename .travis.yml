@@ -1,7 +1,5 @@
 # Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
-dist: trusty
-sudo: required
 
 matrix:
   include:
@@ -26,19 +24,19 @@ matrix:
 addons:
   apt:
     packages:
-    # https://stackoverflow.com/a/34549360
-    - xorg
-    - xvfb
-    - dbus-x11
-    - xfonts-100dpi
-    - xfonts-75dpi
-    - xfonts-cyrillic
-    # director python deps:
-    - python-dev
-    - python-lxml
-    - python-numpy
-    - python-scipy
-    - python-yaml
+      # https://stackoverflow.com/a/34549360
+      - xorg
+      - xvfb
+      - dbus-x11
+      - xfonts-100dpi
+      - xfonts-75dpi
+      - xfonts-cyrillic
+      # director python deps:
+      - python-dev
+      - python-lxml
+      - python-numpy
+      - python-scipy
+      - python-yaml
 
 before_script:
   # https://lcm-proj.github.io/multicast_setup.html:
