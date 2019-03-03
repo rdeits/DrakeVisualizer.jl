@@ -17,8 +17,10 @@ matrix:
       env: DIRECTOR_BUILD_FROM_SOURCE=1 TESTCMD="xvfb-run julia"
     - os: osx
       julia: 0.7
+      env: TESTCMD="julia"
     - os: osx
       julia: 1.1
+      env: TESTCMD="julia"
 
 addons:
   apt:
