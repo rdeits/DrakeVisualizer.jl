@@ -5,16 +5,16 @@ matrix:
   include:
     - os: linux
       julia: 0.7
-      env: TESTCMD="xvfb-run julia"
+      env: TESTCMD="xvfb-run -a -s \"-screen 0 1024x768x24\" -e /dev/stdout julia"
     - os: linux
       julia: 1.0
-      env: TESTCMD="xvfb-run julia"
+      env: TESTCMD="xvfb-run -a -s \"-screen 0 1024x768x24\" -e /dev/stdout julia"
     - os: linux
       julia: 1.1
-      env: TESTCMD="xvfb-run julia"
+      env: TESTCMD="xvfb-run -a -s \"-screen 0 1024x768x24\" -e /dev/stdout julia"
     - os: linux
       julia: 1.1
-      env: DIRECTOR_BUILD_FROM_SOURCE=1 TESTCMD="xvfb-run julia"
+      env: DIRECTOR_BUILD_FROM_SOURCE=1 TESTCMD="xvfb-run -a -s \"-screen 0 1024x768x24\" -e /dev/stdout julia"
     - os: osx
       julia: 0.7
       env: TESTCMD="julia"
@@ -38,9 +38,9 @@ addons:
       - python-numpy
       - python-scipy
       - python-yaml
-      - mesa-utils
-      - libgl1-mesa-glx
-      - libgl1-mesa-dev
+      # - mesa-utils
+      # - libgl1-mesa-glx
+      # - libgl1-mesa-dev
 
 before_script:
   # https://lcm-proj.github.io/multicast_setup.html:
@@ -48,6 +48,9 @@ before_script:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo sysctl -w net.core.rmem_max=2097152; fi
   # OSX deps:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then pip2 install numpy scipy lxml PyYAML; fi
+    # X virtual frame buffer:
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16; fi
+  - sleep 3
 
 script:
   - julia --color=yes -e "using Pkg; if VERSION >= v\"1.1.0-rc1\"; Pkg.build(verbose=true); else Pkg.build(); end"
