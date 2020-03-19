@@ -1,43 +1,43 @@
 # Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
-dist: trusty
-sudo: required
 
 matrix:
   include:
     - os: linux
       julia: 0.7
+      env: TESTCMD="xvfb-run -a -s \"-screen 0 1024x768x24\" -e /dev/stdout julia"
     - os: linux
       julia: 1.0
+      env: TESTCMD="xvfb-run -a -s \"-screen 0 1024x768x24\" -e /dev/stdout julia"
     - os: linux
-      julia: nightly
+      julia: 1.1
+      env: TESTCMD="xvfb-run -a -s \"-screen 0 1024x768x24\" -e /dev/stdout julia"
     - os: linux
-      julia: 1.0
-      env: DIRECTOR_BUILD_FROM_SOURCE=1
+      julia: 1.1
+      env: DIRECTOR_BUILD_FROM_SOURCE=1 TESTCMD="xvfb-run -a -s \"-screen 0 1024x768x24\" -e /dev/stdout julia"
     - os: osx
       julia: 0.7
+      env: TESTCMD="julia"
     - os: osx
-      julia: 1.0
-
-  allow_failures:
-    - julia: nightly
+      julia: 1.1
+      env: TESTCMD="julia"
 
 addons:
   apt:
     packages:
-    # https://stackoverflow.com/a/34549360
-    - xorg
-    - xvfb
-    - dbus-x11
-    - xfonts-100dpi
-    - xfonts-75dpi
-    - xfonts-cyrillic
-    # director python deps:
-    - python-dev
-    - python-lxml
-    - python-numpy
-    - python-scipy
-    - python-yaml
+      # https://stackoverflow.com/a/34549360
+      - xorg
+      - xvfb
+      - dbus-x11
+      - xfonts-100dpi
+      - xfonts-75dpi
+      - xfonts-cyrillic
+      # director python deps:
+      - python-dev
+      - python-lxml
+      - python-numpy
+      - python-scipy
+      - python-yaml
 
 before_script:
   # https://lcm-proj.github.io/multicast_setup.html:
@@ -45,21 +45,17 @@ before_script:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo sysctl -w net.core.rmem_max=2097152; fi
   # OSX deps:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then pip2 install numpy scipy lxml PyYAML; fi
-  # X virtual frame buffer:
+    # X virtual frame buffer:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16; fi
   - sleep 3
 
 script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("DrakeVisualizer")'
-  # use xvfb on Linux:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then xvfb-run -a -s "-screen 0 1024x768x24" -e /dev/stdout julia -e 'using Pkg; Pkg.test("DrakeVisualizer"; coverage=true)'; fi
-  # just run regularly on OSX:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then julia -e 'using Pkg; Pkg.test("DrakeVisualizer"; coverage=true)'; fi
+  - julia --color=yes -e "using Pkg; if VERSION >= v\"1.1.0-rc1\"; Pkg.build(verbose=true); else Pkg.build(); end"
+  - $TESTCMD --check-bounds=yes --color=yes -e 'using Pkg; Pkg.test("DrakeVisualizer", coverage=true)'
 
 notifications:
   email: false
 branches:
   only: master
 after_success:
-  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+  - julia -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'

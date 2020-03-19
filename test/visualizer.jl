@@ -120,7 +120,7 @@ end
     addgeometry!(vis[:box1], HyperSphere(Point(0., 0, 0), 1.0))
 end
 
-if haskey(ENV, "DISPLAY") && (get(ENV, "TRAVIS", "false") == "false" || ENV["TRAVIS_OS_NAME"] == "linux")
+if haskey(ENV, "DISPLAY") && (get(ENV, "TRAVIS", "false") == "false")
     @testset "script" begin
         expected_file = joinpath(@__DIR__, "test_script_success")
         isfile(expected_file) && rm(expected_file)
